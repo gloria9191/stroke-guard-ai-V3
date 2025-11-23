@@ -1,7 +1,8 @@
 flask
 gunicorn
-scikit-learn
-lightgbm
+openai
 numpy
 pandas
-openai
+joblib
+lightgbm
+scikit-learn
