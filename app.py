@@ -1,44 +1,60 @@
 import os
 import pickle
 import numpy as np
-from flask import Flask, request, render_template_string
+from flask import Flask, request, render_template_string, jsonify
 import requests
+import threading
+import gc
 
 app = Flask(__name__)
 PORT = int(os.environ.get("PORT", 10000))
 
-# 모델 로드
+# 메모리 절약 설정
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+
+# 모델 로드 (메모리 즉시 정리)
+print("StrokeGuard AI 모델 로딩 중...")
 with open("stroke_model.pkl", "rb") as f:
     model = pickle.load(f)
+gc.collect()
+print("모델 로드 완료! 메모리 정리됨")
 
-# Groq LLM
+# Groq 설정
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-def get_llm_advice(data, prob):
+# 백그라운드에서 LLM 호출 (워커 안 죽게!)
+def call_llm_async(data, prob, session_id):
     if not GROQ_API_KEY:
-        return "혈압과 혈당 관리, 규칙적인 운동, 금연·절주를 실천해보세요.<br>작은 변화가 큰 차이를 만듭니다."
-
+        return
     prompt = f"""당신은 서울대병원 신경과 전문의이자 가장 따뜻한 의사입니다.
 환자 정보:
 - 나이: {data['age']}세 | 성별: {'남성' if data['gender']==1 else '여성'}
-- BMI: {data['bmi']:.1f} | 혈압: {data['sbp']}/{data['dbp']} mmHg | 공복혈당: {data['glucose']:.1f} mg/dL
-- 흡연: {'합니다' if data['smoking']==1 else '하지 않습니다'} | 음주: {'합니다' if data['drinking']==1 else '하지 않습니다'}
-- 뇌졸중 예측 확률: {prob:.1f}%
+- BMI: {data['bmi']:.1f} | 혈압: {data['sbp']}/{data['dbp']} mmHg | 혈당: {data['glucose']:.1f} mg/dL
+- 흡연: {'합니다' if data['smoking']==1 else '하지 않습니다'}
+- 음주: {'합니다' if data['drinking']==1 else '하지 않습니다'}
+- 뇌졸중 예측 위험도: {prob:.1f}%
 
-현실적이고 따뜻한 생활습관 조언을 4~6문장으로 부탁드립니다. 희망적인 톤으로 작성해주세요."""
-    
+이 환자분께 지금 당장 실천할 수 있는 따뜻하고 구체적인 조언을 4~6문장으로 해주세요.
+긍정적이고 희망찬 톤으로 부탁드립니다."""
+
     try:
         r = requests.post(GROQ_URL, json={
             "model": "llama-3.1-70b-versatile",
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.8, "max_tokens": 350
+            "temperature": 0.8,
+            "max_tokens": 350
         }, headers={"Authorization": f"Bearer {GROQ_API_KEY}"}, timeout=20)
+
         if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"].replace("\n", "<br>")
+            advice = r.json()["choices"][0]["message"]["content"].replace("\n", "<br>")
+            # 간단한 인메모리 저장 (세션 대신)
+            app.advice_cache[session_id] = advice
     except:
         pass
-    return "현재 서버가 혼잡합니다.<br>혈압·혈당 관리와 규칙적인 운동, 금연·절주를 권장드립니다."
+
+# 임시 캐시 (무료 플랜에서도 문제 없음)
+app.advice_cache = {}
 
 HTML = """
 <!DOCTYPE html>
@@ -64,16 +80,13 @@ HTML = """
         .badge:hover{background:rgba(162,155,254,0.3);transform:translateY(-3px)}
         .tagline{font-size:1.6rem;font-weight:400;opacity:0.9}
         .icon{margin-right:12px;background:linear-gradient(135deg,#54a0ff,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-        .card{background:rgba(255,255,255,0.95);color:#333;border-radius:28px;box-shadow:0 20px 60px rgba(80,40,150,0.2);transition:0.4s}
-        .card:hover{transform:translateY(-10px)}
+        .card{background:rgba(255,255,255,0.95);color:#333;border-radius:28px;box-shadow:0 20px 60px rgba(80,40,150,0.2)}
         .btn-opt{width:48%;padding:22px;font-size:1.4rem;border:3px solid #6c5ce7;border-radius:20px;background:white;color:#6c5ce7;font-weight:700;transition:0.3s}
         .btn-opt.active,.btn-opt:hover{background:#6c5ce7;color:white;transform:scale(1.05)}
         .btn-step{background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:white;padding:18px 70px;border-radius:50px;font-size:1.4rem;font-weight:700;box-shadow:0 15px 35px rgba(108,92,231,0.4)}
         .progress{height:12px;border-radius:12px;background:#e0e0e0}
         .progress-bar{background:linear-gradient(90deg,#a29bfe,#6c5ce7)}
-        .result-high{background:linear-gradient(135deg,#ff6b6b,#feca57)}
-        .result-medium{background:linear-gradient(135deg,#feca57,#ff9ff3)}
-        .result-low{background:linear-gradient(135deg,#1dd1a1,#54a0ff)}
+        .result-card{border-radius:30px;padding:60px 40px;box-shadow:0 30px 100px rgba(108,92,231,0.3);background:{{risk_class}}}
     </style>
 </head>
 <body>
@@ -81,13 +94,13 @@ HTML = """
 <div class="hero">
     <div class="hero-content">
         <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
-        <p class="subtitle">국내 500만 명 + 미국 라벨링 데이터로 학습한<br>차세대 뇌졸중 예측 AI</p>
+        <p class="subtitle">국내 50만 명 + 미국 라벨링 데이터로 학습한<br>차세대 뇌졸중 예측 AI</p>
         <div class="badges">
             <span class="badge">ROC-AUC 0.796</span>
             <span class="badge">뇌졸중 검출 91.5%</span>
             <span class="badge">실시간 AI 주치의</span>
         </div>
-        <p class="tagline"><span class="icon">Brain</span>작은 변화가 큰 미래를 만듭니다</p>
+        <p class="tagline">작은 변화가 큰 미래를 만듭니다</p>
     </div>
 </div>
 
@@ -124,10 +137,12 @@ HTML = """
 
 <div class="container my-5 d-none" id="result">
     <div class="row justify-content-center"><div class="col-lg-8">
-        <div class="card p-5 text-white text-center result-card" style="background:{{risk_class}}">
+        <div class="result-card text-white text-center">
             <h1 class="display-1 fw-bold mb-3">{{prob}}%</h1>
             <h2 class="display-5 mb-5">{{risk_text}}군</h2>
-            <div class="mt-5 fs-3 lh-lg px-4" style="text-shadow:0 2px 10px rgba(0,0,0,0.3)">{{advice|safe}}</div>
+            <div class="mt-5 fs-3 lh-lg px-4" id="advice-text" style="text-shadow:0 2px 10px rgba(0,0,0,0.3)">
+                AI 주치의가 맞춤 조언을 준비 중입니다...<br>잠시만 기다려주세요
+            </div>
             <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
         </div>
     </div></div>
@@ -178,33 +193,61 @@ document.getElementById("submit").onclick = () => {
     const required = ["age","bmi","sbp","dbp","glucose"];
     for(let k of required){
         const v = document.getElementById(k).value.trim();
-        if(!v || isNaN(v) || parseFloat(v)<=0){ alert("모든 항목을 정확히 입력해주세요"); return; }
+        if(!v || isNaN(v) || parseFloat(v)<=0){ alert("모든 항목을 입력해주세요"); return; }
         data[k] = parseFloat(v);
     }
-    document.querySelector(".container").innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column"><h2>AI가 분석 중입니다...</h2><div class="spinner-border text-primary" style="width:5rem;height:5rem;"></div><p class="mt-4 fs-3 text-muted">잠시만 기다려주세요</p></div>`;
+    document.querySelector(".container").innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column"><h2>AI 분석 중...</h2><div class="spinner-border text-primary" style="width:5rem;height:5rem;"></div><p class="mt-4 fs-3">잠시만 기다려주세요</p></div>`;
     fetch("/", {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:new URLSearchParams(data)})
-    .then(r => r.text()).then(html => document.body.innerHTML = html)
-    .catch(() => document.body.innerHTML = `<div class="text-center py-5"><h1>일시적인 오류가 발생했습니다</h1><button class="btn btn-primary btn-lg" onclick="location.reload()">다시 시도</button></div>`);
+    .then(r => r.text()).then(html => document.body.innerHTML = html);
 };
+
+// 결과 페이지에서 LLM 조언 실시간 로드
+if(document.getElementById("advice-text")){
+    setTimeout(() => {
+        fetch("/advice?session=" + new Date().getTime())
+        .then(r => r.text())
+        .then(text => {
+            if(text.length > 50) document.getElementById("advice-text").innerHTML = text;
+        });
+    }, 4000);
+}
 </script>
 </body>
 </html>
 """
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index():
-    if request.method == "POST":
-        try:
-            d = {k: float(request.form[k]) for k in ["gender","age","bmi","sbp","dbp","glucose","smoking","drinking"]}
-            X = np.array([[d["gender"], d["age"], d["bmi"], d["sbp"], d["dbp"], d["glucose"], d["smoking"], d["drinking"]]])
-            prob = model.predict_proba(X)[0][1] * 100
-            advice = get_llm_advice(d, prob)
-            rc = "linear-gradient(135deg,#ff6b6b,#feca57)" if prob > 70 else "linear-gradient(135deg,#feca57,#ff9ff3)" if prob > 30 else "linear-gradient(135deg,#1dd1a1,#54a0ff)"
-            rt = "고위험" if prob > 70 else "주의 필요" if prob > 30 else "안전"
-            return render_template_string(HTML, prob=f"{prob:.1f}", risk_class=rc, risk_text=rt, advice=advice)
-        except Exception as e:
-            return f"<div class='text-center py-5'><h1>오류 발생</h1><p>{e}</p><button class='btn btn-primary' onclick='history.back()'>돌아가기</button></div>"
     return HTML
+
+@app.route("/", methods=["POST"])
+def predict():
+    try:
+        d = {k: float(request.form[k]) for k in ["gender","age","bmi","sbp","dbp","glucose","smoking","drinking"]}
+        X = np.array([[d["gender"], d["age"], d["bmi"], d["sbp"], d["dbp"], d["glucose"], d["smoking"], d["drinking"]]])
+        prob = model.predict_proba(X)[0][1] * 100
+
+        session_id = str(hash(str(d) + str(prob)))
+        app.advice_cache[session_id] = None
+
+        # 백그라운드에서 LLM 호출 (워커 안 막힘!)
+        threading.Thread(target=call_llm_async, args=(d, prob, session_id), daemon=True).start()
+
+        rc = "linear-gradient(135deg,#ff6b6b,#feca57)" if prob > 70 else "linear-gradient(135deg,#feca57,#ff9ff3)" if prob > 30 else "linear-gradient(135deg,#1dd1a1,#54a0ff)"
+        rt = "고위험" if prob > 70 else "주의 필요" if prob > 30 else "안전"
+
+        return render_template_string(HTML, prob=f"{prob:.1f}", risk_class=rc, risk_text=rt, advice="AI 주치의가 맞춤 조언을 준비 중입니다...<br>잠시만 기다려주세요")
+    except:
+        return "<h1>입력값을 확인해주세요</h1><button onclick='history.back()'>돌아가기</button>"
+
+@app.route("/advice")
+def get_advice():
+    session = request.args.get("session", "")
+    for key in list(app.advice_cache.keys()):
+        if app.advice_cache[key] is not None:
+            advice = app.advice_cache.pop(key, "")
+            return advice if advice else "혈압·혈당 관리와 규칙적인 운동을 추천드립니다."
+    return ""
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
