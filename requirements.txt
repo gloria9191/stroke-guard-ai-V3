@@ -6,4 +6,4 @@ pandas==2.2.3
 numpy==1.24.3
 joblib==1.3.2
 setuptools>=69.0.0
-requests==2.32.3   ← 이 줄 추가!
+requests==2.32.3
