@@ -7,4 +7,4 @@ joblib==1.3.2
 pickle-mixin==1.0.2
 # 만약 XGBoost나 LightGBM 썼다면 추가
 # xgboost==2.0.3
-# lightgbm==4.1.0
+lightgbm==4.1.0
