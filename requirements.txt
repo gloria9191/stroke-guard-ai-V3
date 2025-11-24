@@ -1,8 +1,8 @@
 Flask==2.3.3
 gunicorn==22.0.0
 lightgbm==4.1.0
-scikit-learn==1.5.1  # 1.3.2 → 1.5.1로 업그레이드 (wheel 지원 강화)
+scikit-learn==1.5.1
 pandas==2.1.4
 numpy==1.24.3
 joblib==1.3.2
-setuptools>=69.0.0  # 최신 버전으로 (distutils 호환 강화)
+setuptools>=69.0.0
