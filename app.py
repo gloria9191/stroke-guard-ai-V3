@@ -3,100 +3,139 @@ import pickle
 import numpy as np
 from flask import Flask, request, render_template_string
 import requests
-import json
 
 app = Flask(__name__)
 PORT = int(os.environ.get("PORT", 10000))
 
-# =================== 모델 로드 ===================
-MODEL_PATH = "stroke_model.pkl"  # 당신 파일명 그대로!
-with open(MODEL_PATH, "rb") as f:
+# 모델 로드
+with open("stroke_model.pkl", "rb") as f:
     model = pickle.load(f)
 
-# =================== LLM 설정 (2가지 중 하나만 쓰세요) ===================
-# 1. Groq (무료 + 초고속 + 한국어 최고) ← 강력 추천!
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")  # Render 환경변수에 넣기!
+# Groq LLM 연결
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# 2. OpenAI (GPT-4o) ← 돈 좀 들지만 완벽함
-# OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+def get_llm_advice(data, prob):
+    if not GROQ_API_KEY:
+        return "GROQ_API_KEY가 설정되지 않아 기본 조언을 제공합니다.<br>혈압·혈당 관리와 금연·절주를 권장합니다."
 
-def get_llm_advice(patient_data, prob):
-    risk = "높은" if prob > 70 else "중간" if prob > 30 else "낮은"
-    
     prompt = f"""
-    당신은 서울대학교병원 신경과 전문의입니다. 환자에게 따뜻하고 전문적인 어조로 조언해주세요.
-    환자 정보:
-    - 성별: {'남성' if patient_data['gender']==1 else '여성'}
-    - 나이: {patient_data['age']}세
-    - BMI: {patient_data['bmi']:.1f}
-    - 혈압: {patient_data['sbp']}/{patient_data['dbp']} mmHg
-    - 공복혈당: {patient_data['glucose']:.1f} mg/dL
-    - 흡연: {'흡연자' if patient_data['smoking']==1 else '비흡연자'}
-    - 음주: {'음주자' if patient_data['drinking']==1 else '비음주자'}
-    - 뇌졸중 예측 확률: {prob:.1f}%
-
-    이 환자에게 줄 수 있는 가장 현실적이고 구체적인 생활습관 개선 조언 4~6줄을 작성해주세요.
-    무조건 한국어로, '~하세요', '~하는 것이 좋습니다' 식으로 부드럽고 따뜻하게.
-    과장된 경고보다는 실천 가능한 조언 위주로.
+    서울대병원 신경과 전문의입니다. 다음 환자분께 따뜻하고 구체적인 생활습관 조언 부탁드립니다:
+    성별: {'남성' if data['gender']==1 else '여성'}, 나이: {data['age']}세
+    BMI: {data['bmi']:.1f}, 혈압: {data['sbp']}/{data['dbp']} mmHg, 공복혈당: {data['glucose']:.1f} mg/dL
+    흡연: {'합니다' if data['smoking']==1 else '하지 않습니다'}, 음주: {'합니다' if data['drinking']==1 else '하지 않습니다'}
+    뇌졸중 예측 확률: {prob:.1f}%
+    4~6문장으로 현실적인 조언 부탁드립니다.
     """
+    try:
+        r = requests.post(GROQ_URL, headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+                          json={"model": "llama-3.1-70b-versatile", "messages": [{"role": "user", "content": prompt}],
+                                "temperature": 0.7, "max_tokens": 300}, timeout=15)
+        if r.status_code == 200:
+            return r.json()["choices"][0]["message"]["content"].replace("\n", "<br>")
+    except:
+        pass
+    return "현재 서버가 혼잡합니다. 혈압·혈당 관리와 규칙적인 운동, 금연·절주를 권장드립니다."
 
-    if GROQ_API_KEY:
-        try:
-            headers = {"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"}
-            payload = {
-                "model": "llama-3.1-70b-versatile",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7,
-                "max_tokens": 300
-            }
-            r = requests.post(GROQ_URL, headers=headers, json=payload, timeout=15)
-            if r.status_code == 200:
-                return r.json()["choices"][0]["message"]["content"].strip()
-        except:
-            pass
+HTML = """
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StrokeGuard AI - 뇌졸중 조기 예측</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {font-family:'Noto Sans KR',sans-serif;background:linear-gradient(135deg,#667eea,#764ba2);color:white}
+        .hero {padding:100px 0;text-align:center;background:rgba(0,0,0,0.5);border-radius:0 0 40px 40px}
+        .card {background:rgba(255,255,255,0.95);color:#333;border-radius:20px}
+        .btn-step {background:#5e42a6;color:white;padding:12px 50px;border-radius:50px;font-size:1.3rem}
+        .btn-gender, .btn-binary {width:48%;padding:20px;font-size:1.3rem;border:3px solid #5e42a6;border-radius:15px}
+        .btn-gender.active, .btn-binary.active {background:#5e42a6;color:white}
+        .progress {height:10px}
+        .result-high {background:#e74c3c}
+        .result-medium {background:#f39c12}
+        .result-low {background:#27ae60}
+    </style>
+</head>
+<body>
+<div class="hero">
+    <h1 class="display-3 fw-bold">StrokeGuard AI</h1>
+    <p class="lead fs-3">인공지능 뇌졸중 조기 예측 시스템</p>
+</div>
 
-    # Groq 실패시 기본 조언
-    return f"""
-    현재 뇌졸중 위험이 {risk} 수준으로 평가되었습니다.
-    혈압과 혈당을 꾸준히 관리하는 것이 가장 중요합니다.
-    {'금연이 시급합니다.' if patient_data['smoking']==1 else '비흡연을 유지하는 것이 좋습니다.'}
-    {'과도한 음주는 피해주세요.' if patient_data['drinking']==1 else '적정 음주나 금주를 권장합니다.'}
-    매일 30분 이상 빠르게 걷기, 채소 중심 식사, 스트레스 관리를 실천해보세요.
-    3~6개월 후 재검사를 권장드립니다.
-    """
+<div class="container my-5" id="survey">
+    <div class="card p-5">
+        <div class="progress mb-4"><div class="progress-bar" id="prog" style="width:12.5%"></div></div>
+        <h2 class="text-center text-primary mb-5"><span id="qnum">1</span>/8 성별을 선택해주세요</h2>
+        <div id="s1" class="text-center"><button class="btn btn-gender active" data-v="1">남성</button><button class="btn btn-gender" data-v="2">여성</button></div>
+        <div id="s2" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="age" placeholder="나이"></div>
+        <div id="s3" class="d-none text-center"><input type="number" step="0.1" class="form-control form-control-lg text-center" id="bmi" placeholder="BMI"></div>
+        <div id="s4" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="sbp" placeholder="수축기 혈압"></div>
+        <div id="s5" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="dbp" placeholder="이완기 혈압"></div>
+        <div id="s6" class="d-none text-center"><input type="number" step="0.1" class="form-control form-control-lg text-center" id="glucose" placeholder="공복 혈당"></div>
+        <div id="s7" class="d-none text-center"><button class="btn btn-binary active" data-v="0">비흡연</button><button class="btn btn-binary" data-v="1">흡연</button></div>
+        <div id="s8" class="d-none text-center"><button class="btn btn-binary active" data-v="0">비음주</button><button class="btn btn-binary" data-v="1">음주</button></div>
+        <div class="text-center mt-5">
+            <button id="prev" class="btn btn-secondary me-3 d-none">이전</button>
+            <button id="next" class="btn btn-step">다음</button>
+            <button id="submit" class="btn btn-danger d-none">예측하기</button>
+        </div>
+    </div>
+</div>
 
-# =================== HTML + JS (당신이 원했던 완벽한 UI) ===================
-HTML = """..."""  # (너무 길어서 아래에 별도 제공)
+<div class="container my-5 d-none" id="result">
+    <div class="card p-5 text-center text-white {{risk_class}}">
+        <h1 class="display-1">{{prob}}%</h1>
+        <h2>{{risk_text}}군</h2>
+        <canvas id="gauge" width="300" height="150"></canvas>
+        <div class="mt-4 fs-4" style="line-height:2">{{advice|safe}}</div>
+        <button class="btn btn-light btn-lg mt-4" onclick="location.reload()">다시 검사</button>
+    </div>
+</div>
 
-@app.route("/", methods=["GET", "POST"])
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let step=1, data={gender:1,smoking:0,drinking:0};
+document.getElementById("next").onclick=()=>{
+    if(step===1) data.gender = document.querySelector(".btn-gender.active").dataset.v;
+    if(step===7) data.smoking = document.querySelector("#s7 .active").dataset.v;
+    if(step===8) data.drinking = document.querySelector("#s8 .active").dataset.v;
+    if(step>=2 && step<=6){
+        const ids=["","age","bmi","sbp","dbp","glucose"][step-1];
+        data[ids] = document.getElementById(ids).value;
+    }
+    if(step<8){ document.getElementById("s"+step).classList.add("d-none"); step++; document.getElementById("s"+step).classList.remove("d-none"); }
+    document.getElementById("prog").style.width = (step/8*100)+"%";
+    document.getElementById("qnum").textContent = step;
+    document.getElementById("prev").classList.remove("d-none");
+    if(step===8) {document.getElementById("next").classList.add("d-none"); document.getElementById("submit").classList.remove("d-none");}
+};
+document.getElementById("prev").onclick=()=>{/* 생략 */};
+document.getElementById("submit").onclick=()=>{
+    fetch("/", {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
+        body:new URLSearchParams(data)})
+    .then(r=>r.text()).then(html=>{document.body.innerHTML=html;});
+};
+document.querySelectorAll(".btn-gender,.btn-binary").forEach(b=>b.onclick=function(){
+    this.parentNode.querySelectorAll("button").forEach(x=>x.classList.remove("active")); this.classList.add("active");
+});
+</script>
+</body></html>
+"""
+
+@app.route("/", methods=["GET","POST"])
 def index():
     if request.method == "POST":
-        data = {
-            "gender": int(request.form["gender"]),
-            "age": int(request.form["age"]),
-            "bmi": float(request.form["bmi"]),
-            "sbp": int(request.form["sbp"]),
-            "dbp": int(request.form["dbp"]),
-            "glucose": float(request.form["glucose"]),
-            "smoking": int(request.form["smoking"]),
-            "drinking": int(request.form["drinking"])
-        }
-        X = np.array([[
-            data["gender"], data["age"], data["bmi"], data["sbp"],
-            data["dbp"], data["glucose"], data["smoking"], data["drinking"]
-        ]])
-        prob = model.predict_proba(X)[0][1] * 100
-
-        advice = get_llm_advice(data, prob)
-
-        risk_class = "result-high" if prob > 70 else "result-medium" if prob > 30 else "result-low"
-        risk_text = "고위험" if prob > 70 else "주의 필요" if prob > 30 else "안전"
-
-        return render_template_string(HTML, prob=f"{prob:.1f}", risk_class=risk_class,
-                                    risk_text=risk_text, advice=advice)
-
-    return render_template_string(HTML)
+        d = {k:float(request.form[k]) for k in ["gender","age","bmi","sbp","dbp","glucose","smoking","drinking"]}
+        X = np.array([[d["gender"],d["age"],d["bmi"],d["sbp"],d["dbp"],d["glucose"],d["smoking"],d["drinking"]]])
+        prob = model.predict_proba(X)[0][1]*100
+        advice = get_llm_advice(d, prob)
+        rc = "result-high" if prob>70 else "result-medium" if prob>30 else "result-low"
+        rt = "고위험" if prob>70 else "주의 필요" if prob>30 else "안전"
+        return render_template_string(HTML, prob=f"{prob:.1f}", risk_class=rc, risk_text=rt, advice=advice)
+    return HTML
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=PORT)
