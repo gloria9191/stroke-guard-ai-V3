@@ -2,7 +2,8 @@ Flask==2.3.3
 gunicorn==22.0.0
 lightgbm==4.1.0
 scikit-learn==1.5.1
-pandas==2.2.3  # 2.1.4 → 2.2.3 업그레이드 (Python 3.13 호환 + 성능 개선)
+pandas==2.2.3
 numpy==1.24.3
 joblib==1.3.2
 setuptools>=69.0.0
+requests==2.32.3   ← 이 줄 추가!
