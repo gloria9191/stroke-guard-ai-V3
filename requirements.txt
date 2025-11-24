@@ -1,7 +1,0 @@
-
-flask
-gunicorn
-numpy
-scikit-learn
-lightgbm
-gunicorn
