@@ -1,0 +1,16 @@
+
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Stroke Prediction</h2>
+<form method="post">
+{% for f in ['Sex','Age','BMI','SBP','DBP','Glucose','Smoking','Alcohol'] %}
+<label>{{f}}:</label><input name="{{f}}" required><br>
+{% endfor %}
+<button type="submit">Predict</button>
+</form>
+{% if pred is not none %}
+<h3>Risk: {{pred}}</h3>
+{% endif %}
+</body>
+</html>
