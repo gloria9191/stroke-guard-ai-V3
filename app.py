@@ -65,8 +65,22 @@ HTML = """
 </head>
 <body>
 <div class="hero">
-    <h1 class="display-3 fw-bold">StrokeGuard AI</h1>
-    <p class="lead fs-3">인공지능 뇌졸중 조기 예측 시스템</p>
+    <div>
+        <h1 class="display-2 mb-4">StrokeGuard AI</h1>
+        <p class="lead mb-3" style="font-size:1.75rem;font-weight:300;line-height:1.6">
+            국내 500만 명 + 미국 라벨링 데이터로 학습한<br>
+            뇌졸중 조기 예측 AI
+        </p>
+        <p class="fs-5 opacity-90 mb-5">
+            <span class="badge bg-white text-primary px-4 py-2 rounded-pill me-2 shadow-sm">ROC-AUC 0.796</span>
+            <span class="badge bg-white text-primary px-4 py-2 rounded-pill me-2 shadow-sm">뇌졸중 검출 91.5%</span>
+            <span class="badge bg-white text-primary px-4 py-2 rounded-pill shadow-sm">실시간 AI 주치의</span>
+        </p>
+        <div class="mt-5">
+            <i class="fas fa-brain fa-3x text-info mb-3 opacity-90"></i><br>
+            <span class="fs-4 opacity-95">작은 변화가 큰 차이를 만듭니다</span>
+        </div>
+    </div>
 </div>
 
 <div class="container my-5" id="survey">
