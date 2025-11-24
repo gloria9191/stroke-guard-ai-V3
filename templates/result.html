@@ -1,0 +1,19 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>Result</title>
+</head>
+<body>
+    <h2>예측 결과</h2>
+    <p>위험도: {{ prob }}%</p>
+    <h3>코멘트:</h3>
+    <ul>
+        {% for c in comment %}
+        <li>{{ c }}</li>
+        {% endfor %}
+    </ul>
+    <a href="/">다시 입력</a>
+</body>
+</html>
