@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request
+from flask import Flask, request, jsonify, render_template
 import joblib
 import numpy as np
 import os
@@ -7,87 +7,106 @@ import requests
 app = Flask(__name__)
 
 # ----------------------------
-# 1) 모델 로드
+# 1) MODEL LOAD
 # ----------------------------
-model = joblib.load("stroke_model.pkl")
-THRESHOLD = 0.029698   # recall 0.915 때 쓰던 threshold
+try:
+    model = joblib.load("stroke_model.pkl")
+    print("MODEL LOADED")
+except Exception as e:
+    print("===================")
+    print("MODEL LOAD ERROR:", e)
+    print("===================")
+
+THRESHOLD = 0.029698
 
 # ----------------------------
-# 2) LLM 조언 생성 (Groq)
+# 2) GROQ LLM
 # ----------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def generate_advice(prob):
     if not GROQ_API_KEY:
-        return "AI 코멘트를 불러올 수 없습니다."
+        return "AI 조언을 불러올 수 없습니다."
 
     prompt = f"""
-    사용자의 뇌졸중 발병 확률이 {prob}%입니다.
-    한국어로 자연스럽게, 의료적 조언을 5문장 이내로 작성하세요.
-    불필요한 기호(*, #)를 절대 넣지 마세요.
+    사용자의 뇌졸중 발병 확률은 {prob}% 입니다.
+    건강 관리, 생활습관, 운동, 식습관, 주의할 점을
+    5줄 이내의 한국어로 자연스럽게 조언해 주세요.
     """
 
     try:
         r = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json",
+            },
             json={
                 "model": "mixtral-8x7b-32768",
                 "messages": [{"role": "user", "content": prompt}]
-            }
+            },
+            timeout=15
         )
-        return r.json()["choices"][0]["message"]["content"]
+        data = r.json()
+        return data["choices"][0]["message"]["content"]
     except:
         return "AI 조언 생성 중 오류가 발생했습니다."
 
 
 # ----------------------------
-# 3) 라우트
+# 3) HOME
 # ----------------------------
-@app.route("/", methods=["GET"])
-def index():
+@app.route("/")
+def home():
     return render_template("index.html")
 
 
-@app.route("/", methods=["POST"])
+# ----------------------------
+# 4) PREDICT (JSON)
+# ----------------------------
+@app.route("/predict", methods=["POST"])
 def predict():
     try:
-        gender = int(request.form.get("gender"))
-        age = float(request.form.get("age"))
-        bmi = float(request.form.get("bmi"))
-        sbp = float(request.form.get("sbp"))
-        dbp = float(request.form.get("dbp"))
-        glucose = float(request.form.get("glucose"))
-        smoking = int(request.form.get("smoking"))
-        drinking = int(request.form.get("drinking"))
-    except:
-        return "입력 오류"
+        data = request.json
 
-    X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
-    prob = float(model.predict_proba(X)[0][1]) * 100
+        X = np.array([[ 
+            float(data["gender"]),
+            float(data["age"]),
+            float(data["bmi"]),
+            float(data["sbp"]),
+            float(data["dbp"]),
+            float(data["glucose"]),
+            float(data["smoking"]),
+            float(data["drinking"]),
+        ]])
 
-    # 위험군 분류
-    if prob >= THRESHOLD * 100:
-        risk_text = "고위험"
-        risk_class = "linear-gradient(135deg,#ff6b6b,#feca57)"
-    elif prob >= 3:
-        risk_text = "중위험"
-        risk_class = "linear-gradient(135deg,#feca57,#ff9ff3)"
-    else:
-        risk_text = "저위험"
-        risk_class = "linear-gradient(135deg,#1dd1a1,#54a0ff)"
+        prob = float(model.predict_proba(X)[0][1])
+        prob_percent = round(prob * 100, 2)
 
-    advice = generate_advice(round(prob, 2))
+        # 위험군 판단
+        if prob >= THRESHOLD:
+            risk_class = "result-high"
+            risk_text = "고위험"
+        else:
+            risk_class = "result-low"
+            risk_text = "저위험"
 
-    return render_template(
-        "index.html",
-        prob=round(prob, 2),
-        risk_text=risk_text,
-        risk_class=risk_class,
-        advice=advice,
-        show_result=True
-    )
+        advice = generate_advice(prob_percent)
+
+        return jsonify({
+            "prob": prob_percent,
+            "risk_class": risk_class,
+            "risk_text": risk_text,
+            "advice": advice
+        })
+
+    except Exception as e:
+        print("ERROR:", e)
+        return jsonify({"error": str(e)}), 500
 
 
+# ----------------------------
+# MAIN (절대 app.run() 넣지 마세요)
+# ----------------------------
 if __name__ == "__main__":
     app.run()
