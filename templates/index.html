@@ -195,7 +195,8 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
         `;
 
-        fetch("/predict", {
+        fetch("https://stroke-guard-ai-v3.onrender.com/predict", {
+
             method:"POST",
             headers:{"Content-Type":"application/x-www-form-urlencoded"},
             body:new URLSearchParams(data)
