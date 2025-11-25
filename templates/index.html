@@ -2,199 +2,106 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>StrokeGuard AI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background: #0f0f23; color: white; font-family: 'Noto Sans KR', sans-serif; }
-        .d-none { display: none !important; }
-        .card { border-radius: 20px; }
-        .result-high { background: #ff7675; }
-        .result-medium { background: #ffeaa7; color: #333 !important; }
-        .result-low { background: #55efc4; color: #333 !important; }
-    </style>
 </head>
-<body>
 
-<div class="container my-5" id="survey">
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h1 class="text-center mb-4">StrokeGuard AI</h1>
+
     <div class="card p-4">
-        <h2 id="question" class="text-center mb-4">1/8 성별을 선택해주세요</h2>
+        <h4 class="mb-3">건강 정보 입력</h4>
 
-        <!-- Step 1 -->
-        <div id="step1" class="text-center">
-            <button class="btn btn-primary select-btn" data-value="1">남성</button>
-            <button class="btn btn-primary select-btn" data-value="2">여성</button>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label>성별</label>
+                <select id="gender" class="form-select">
+                    <option value="1">남성</option>
+                    <option value="2">여성</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label>나이</label>
+                <input id="age" type="number" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+                <label>BMI</label>
+                <input id="bmi" type="number" step="0.1" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+                <label>수축기 혈압</label>
+                <input id="sbp" type="number" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+                <label>이완기 혈압</label>
+                <input id="dbp" type="number" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+                <label>공복 혈당</label>
+                <input id="glucose" type="number" step="0.1" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+                <label>흡연 여부</label>
+                <select id="smoking" class="form-select">
+                    <option value="0">아니오</option>
+                    <option value="1">예</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <label>음주 여부</label>
+                <select id="drinking" class="form-select">
+                    <option value="0">아니오</option>
+                    <option value="1">예</option>
+                </select>
+            </div>
         </div>
 
-        <!-- Step 2~6 -->
-        <div id="step2" class="d-none text-center">
-            <input id="age" type="number" class="form-control" placeholder="나이">
-        </div>
-        <div id="step3" class="d-none text-center">
-            <input id="bmi" type="number" class="form-control" placeholder="BMI">
-        </div>
-        <div id="step4" class="d-none text-center">
-            <input id="sbp" type="number" class="form-control" placeholder="수축기 혈압">
-        </div>
-        <div id="step5" class="d-none text-center">
-            <input id="dbp" type="number" class="form-control" placeholder="이완기 혈압">
-        </div>
-        <div id="step6" class="d-none text-center">
-            <input id="glucose" type="number" class="form-control" placeholder="공복 혈당">
-        </div>
-
-        <!-- Step 7 -->
-        <div id="step7" class="d-none text-center">
-            <button class="btn btn-primary select-btn" data-value="0">흡연 안함</button>
-            <button class="btn btn-primary select-btn" data-value="1">흡연함</button>
-        </div>
-
-        <!-- Step 8 -->
-        <div id="step8" class="d-none text-center">
-            <button class="btn btn-primary select-btn" data-value="0">음주 안함</button>
-            <button class="btn btn-primary select-btn" data-value="1">음주함</button>
-        </div>
-
-        <div class="text-center mt-4">
-            <button id="prev" class="btn btn-outline-light me-3 d-none">이전</button>
-            <button id="next" class="btn btn-success">다음</button>
-            <button id="submit" class="btn btn-danger d-none">예측하기</button>
-        </div>
+        <button id="predictBtn" class="btn btn-primary btn-lg w-100 mt-4">
+            AI 분석하기
+        </button>
     </div>
-</div>
 
-<!-- Result Page -->
-<div class="container my-5 d-none" id="result">
-    <div class="card p-5 text-center" id="resultCard">
-        <h2>AI가 분석 중입니다...</h2>
-        <div class="spinner-border text-light mt-4"></div>
+    <div class="card p-4 mt-4 d-none" id="resultCard">
+        <h2>예측 결과</h2>
+        <h1 id="prob" class="text-primary"></h1>
+        <p id="advice" class="fs-5 mt-3"></p>
     </div>
 </div>
 
 <script>
-// ----------------------------
-// 전역 변수
-// ----------------------------
-let step = 1;
-
-const data = {
-    gender: 1,
-    age: null,
-    bmi: null,
-    sbp: null,
-    dbp: null,
-    glucose: null,
-    smoking: 0,
-    drinking: 0
-};
-
-const questions = [
-    "성별을 선택해주세요",
-    "나이를 입력해주세요",
-    "BMI를 입력해주세요",
-    "수축기 혈압을 입력해주세요",
-    "이완기 혈압을 입력해주세요",
-    "공복 혈당을 입력해주세요",
-    "흡연 여부를 선택해주세요",
-    "음주 여부를 선택해주세요"
-];
-
-// ----------------------------
-// 공통 버튼 설정
-// ----------------------------
-document.querySelectorAll(".select-btn").forEach(btn => {
-    btn.addEventListener("click", function () {
-        this.parentNode.querySelectorAll(".select-btn").forEach(x =>
-            x.classList.remove("btn-warning")
-        );
-        this.classList.add("btn-warning");
-    });
-});
-
-// ----------------------------
-// 다음 버튼
-// ----------------------------
-document.getElementById("next").addEventListener("click", () => {
-    if (step === 1) data.gender = getSelected("step1");
-    if (step === 7) data.smoking = getSelected("step7");
-    if (step === 8) data.drinking = getSelected("step8");
-
-    // 숫자 입력 검증
-    if (step >= 2 && step <= 6) {
-        const keys = ["", "age", "bmi", "sbp", "dbp", "glucose"];
-        const key = keys[step];
-        const value = document.getElementById(key).value;
-
-        if (!value || value <= 0) {
-            alert("값을 정확히 입력하세요");
-            return;
-        }
-        data[key] = parseFloat(value);
-    }
-
-    goStep(step + 1);
-});
-
-// ----------------------------
-// 이전 버튼
-// ----------------------------
-document.getElementById("prev").addEventListener("click", () => {
-    goStep(step - 1);
-});
-
-// ----------------------------
-// 예측 버튼
-// ----------------------------
-document.getElementById("submit").addEventListener("click", () => {
-    document.getElementById("survey").classList.add("d-none");
-    document.getElementById("result").classList.remove("d-none");
+document.getElementById("predictBtn").onclick = () => {
+    const data = {
+        gender: document.getElementById("gender").value,
+        age: document.getElementById("age").value,
+        bmi: document.getElementById("bmi").value,
+        sbp: document.getElementById("sbp").value,
+        dbp: document.getElementById("dbp").value,
+        glucose: document.getElementById("glucose").value,
+        smoking: document.getElementById("smoking").value,
+        drinking: document.getElementById("drinking").value
+    };
 
     fetch("/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method:"POST",
+        headers: { "Content-Type":"application/json" },
         body: JSON.stringify(data)
     })
-    .then(r => r.json())
-    .then(res => {
-        const card = document.getElementById("resultCard");
-        card.classList.add(res.risk_class);
-        card.innerHTML = `
-            <h1 class="display-3">${res.prob}%</h1>
-            <h2>${res.risk_text}</h2>
-            <p class="mt-4">${res.advice}</p>
-            <button class="btn btn-light mt-4" onclick="location.reload()">다시 검사하기</button>
-        `;
-    })
-    .catch(err => {
-        document.getElementById("resultCard").innerHTML = `
-            <h2>오류 발생</h2>
-            <p>${err}</p>
-        `;
+    .then(r=>r.json())
+    .then(res=>{
+        document.getElementById("resultCard").classList.remove("d-none");
+        document.getElementById("prob").innerText = res.prob + "%";
+        document.getElementById("advice").innerText = res.advice;
     });
-});
-
-// ----------------------------
-// 공통 함수
-// ----------------------------
-function goStep(n) {
-    if (n < 1 || n > 8) return;
-
-    document.getElementById(`step${step}`).classList.add("d-none");
-    document.getElementById(`step${n}`).classList.remove("d-none");
-
-    step = n;
-
-    document.getElementById("question").innerText = `${step}/8 ${questions[step - 1]}`;
-
-    document.getElementById("prev").classList.toggle("d-none", step === 1);
-    document.getElementById("next").classList.toggle("d-none", step === 8);
-    document.getElementById("submit").classList.toggle("d-none", step !== 8);
-}
-
-function getSelected(stepId) {
-    const active = document.querySelector(`#${stepId} .btn-warning`);
-    return active ? active.dataset.value : null;
-}
+};
 </script>
 
 </body>
