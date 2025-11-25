@@ -27,7 +27,7 @@ def generate_advice(prob):
     prompt = f"""
     사용자의 뇌졸중 발병 확률은 {prob}% 입니다.
 
-    한국인 생활습관 기준으로,
+    한국인의 생활습관 기준으로,
     - 식이요법
     - 운동
     - 혈압/혈당 관리
@@ -48,13 +48,15 @@ def generate_advice(prob):
             json={
                 "model": "llama-3.1-8b-instant",
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.6
+                "temperature": 0.6,
+                "max_tokens": 200
             },
-            timeout=15
+            timeout=12
         )
         ans = r.json()
         return ans["choices"][0]["message"]["content"].strip()
-    except Exception as e:
+
+    except Exception:
         return "AI 조언 생성 중 오류가 발생했습니다."
 
 
@@ -80,10 +82,12 @@ def predict():
         smoking   = float(data["smoking"])
         drinking  = float(data["drinking"])
 
+        # 모델 입력
         X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
         proba = model.predict_proba(X)[0][1]
         prob_percent = round(proba * 100, 1)
 
+        # 위험군 결정
         risk_class = "result-low"
         risk_text  = "저위험"
 
@@ -91,6 +95,7 @@ def predict():
             risk_class = "result-high"
             risk_text  = "고위험"
 
+        # AI 조언
         advice = generate_advice(prob_percent)
 
         return jsonify({
@@ -105,7 +110,7 @@ def predict():
 
 
 # ------------------------------------------------
-# 4) Render에서는 gunicorn이 실행 → run() 절대 사용 X
+# 4) Render에서는 run() 금지
 # ------------------------------------------------
 if __name__ == "__main__":
     pass
