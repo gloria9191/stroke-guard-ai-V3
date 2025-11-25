@@ -60,9 +60,107 @@ def get_llm_advice(data, prob):
 # HTML
 # ===============================
 
-HTML = """  
-(여기엔 네가 쓴 긴 HTML 그대로 들어감 — 생략 X, 위 코드 그대로 복사)
+
+<div class="container my-5" id="survey">
+    <div class="row justify-content-center"><div class="col-lg-9">
+        <div class="card p-5">
+            <div class="progress mb-5"><div class="progress-bar" id="prog" style="width:12.5%"></div></div>
+            <h2 class="text-center mb-5" id="question">1/8 성별을 선택해주세요</h2>
+
+            <div id="step1" class="text-center mb-4">
+                <button class="btn btn-opt active" data-value="1">남성</button>
+                <button class="btn btn-opt" data-value="2">여성</button>
+            </div>
+            <div id="step2" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="age" placeholder="나이 (예: 65)"></div>
+            <div id="step3" class="d-none text-center"><input type="number" step="0.1" class="form-control form-control-lg text-center" id="bmi" placeholder="BMI (예: 25.4)"></div>
+            <div id="step4" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="sbp" placeholder="수축기 혈압 (예: 140)"></div>
+            <div id="step5" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="dbp" placeholder="이완기 혈압 (예: 90)"></div>
+            <div id="step6" class="d-none text-center"><input type="number" step="0.1" class="form-control form-control-lg text-center" id="glucose" placeholder="공복 혈당 (예: 120.0)"></div>
+            <div id="step7" class="d-none text-center mb-4"><p class="fs-3 fw-bold mb-4">흡연하시나요?</p>
+                <button class="btn btn-opt active" data-value="0">아니오</button><button class="btn btn-opt" data-value="1">예</button>
+            </div>
+            <div id="step8" class="d-none text-center mb-4"><p class="fs-3 fw-bold mb-4">음주하시나요?</p>
+                <button class="btn btn-opt active" data-value="0">아니오</button><button class="btn btn-opt" data-value="1">예</button>
+            </div>
+
+            <div class="text-center mt-5">
+                <button id="prev" class="btn btn-outline-secondary btn-lg me-4 d-none">이전</button>
+                <button id="next" class="btn btn-step">다음</button>
+                <button id="submit" class="btn btn-danger btn-lg d-none">지금 예측하기</button>
+            </div>
+        </div>
+    </div></div>
+</div>
+
+<div class="container my-5 d-none" id="result">
+    <div class="row justify-content-center"><div class="col-lg-8">
+        <div class="card p-5 text-white text-center result-card" style="background:{{risk_class}}">
+            <h1 class="display-1 fw-bold mb-3">{{prob}}%</h1>
+            <h2 class="display-5 mb-5">{{risk_text}}군</h2>
+            <div class="mt-5 fs-3 lh-lg px-4" style="text-shadow:0 2px 10px rgba(0,0,0,0.3)">{{advice|safe}}</div>
+            <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
+        </div>
+    </div></div>
+</div>
+
+<script>
+const questions = ["성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요","수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요","공복 혈당을 입력해주세요","흡연하시나요?","음주하시나요?"];
+let step = 1;
+const data = {gender:1, smoking:0, drinking:0};
+
+document.getElementById("next").onclick = () => {
+    if(step === 1) data.gender = document.querySelector("#step1 .active").dataset.value;
+    if(step === 7) data.smoking = document.querySelector("#step7 .active").dataset.value;
+    if(step === 8) data.drinking = document.querySelector("#step8 .active").dataset.value;
+    if(step >= 2 && step <= 6){
+        const keys = ["","age","bmi","sbp","dbp","glucose"];
+        const val = document.getElementById(keys[step-1]).value.trim();
+        if(!val || isNaN(val) || parseFloat(val) <= 0){ alert("정확한 값을 입력해주세요"); return; }
+        data[keys[step-1]] = parseFloat(val);
+    }
+    if(step < 8){
+        document.getElementById("step"+step).classList.add("d-none");
+        step++;
+        document.getElementById("step"+step).classList.remove("d-none");
+        document.getElementById("question").innerHTML = step+"/8 "+questions[step-1];
+        document.getElementById("prog").style.width = (step/8*100)+"%";
+        document.getElementById("prev").classList.remove("d-none");
+        if(step === 8){ document.getElementById("next").classList.add("d-none"); document.getElementById("submit").classList.remove("d-none"); }
+    }
+};
+
+document.getElementById("prev").onclick = () => {
+    document.getElementById("step"+step).classList.add("d-none");
+    step--;
+    document.getElementById("step"+step).classList.remove("d-none");
+    document.getElementById("question").innerHTML = step+"/8 "+questions[step-1];
+    document.getElementById("prog").style.width = (step/8*100)+"%";
+    if(step === 1) document.getElementById("prev").classList.add("d-none");
+    document.getElementById("submit").classList.add("d-none"); document.getElementById("next").classList.remove("d-none");
+};
+
+document.querySelectorAll(".btn-opt").forEach(b => b.onclick = function(){
+    this.parentNode.querySelectorAll(".btn-opt").forEach(x => x.classList.remove("active"));
+    this.classList.add("active");
+});
+
+document.getElementById("submit").onclick = () => {
+    const required = ["age","bmi","sbp","dbp","glucose"];
+    for(let k of required){
+        const v = document.getElementById(k).value.trim();
+        if(!v || isNaN(v) || parseFloat(v)<=0){ alert("모든 항목을 정확히 입력해주세요"); return; }
+        data[k] = parseFloat(v);
+    }
+    document.querySelector(".container").innerHTML = `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column"><h2>AI가 분석 중입니다...</h2><div class="spinner-border text-primary" style="width:5rem;height:5rem;"></div><p class="mt-4 fs-3 text-muted">잠시만 기다려주세요</p></div>`;
+    fetch("/", {method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"}, body:new URLSearchParams(data)})
+    .then(r => r.text()).then(html => document.body.innerHTML = html)
+    .catch(() => document.body.innerHTML = `<div class="text-center py-5"><h1>일시적인 오류가 발생했습니다</h1><button class="btn btn-primary btn-lg" onclick="location.reload()">다시 시도</button></div>`);
+};
+</script>
+</body>
+</html>
 """
+
 
 # ===============================
 # 라우트
