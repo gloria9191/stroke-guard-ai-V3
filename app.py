@@ -1,84 +1,128 @@
-from flask import Flask, render_template, request, jsonify
-import joblib
-import numpy as np
-import requests
-import os
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StrokeGuard AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
 
-app = Flask(__name__)
+<body class="bg-light">
 
-# 모델 로드
-model = joblib.load("stroke_model.pkl")
+<div class="container py-5">
 
-THRESHOLD = 0.03
+    <!-- ====================== PAGE 1 ===================== -->
+    <div id="page1">
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+        <h1 class="mb-4 text-center">StrokeGuard AI</h1>
+        <p class="text-center">뇌졸중 발병 위험 예측을 위한 간단한 문진을 시작합니다.</p>
 
-def generate_advice(prob):
-    if not GROQ_API_KEY:
-        return "AI 조언 기능을 사용할 수 없습니다."
+        <div class="text-center mt-4">
+            <button id="startBtn" class="btn btn-primary btn-lg">
+                시작하기
+            </button>
+        </div>
 
-    prompt = f"""
-    사용자의 뇌졸중 발병 확률은 {prob}% 입니다.
-    생활습관, 운동, 식단 개선 등을 포함한 구체적인 조언을 5줄 작성해주세요.
-    """
+    </div>
 
-    try:
-        r = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
-            json={
-                "model": "llama3-8b-8192",
-                "messages": [
-                    {"role": "user", "content": prompt}
-                ]
-            }
-        )
+    <!-- ====================== PAGE 2 (질문/입력) ===================== -->
+    <div id="page2" style="display:none;">
 
-        data = r.json()
-        return data["choices"][0]["message"]["content"]
+        <h2 class="mb-4">1. 기본 정보 입력</h2>
 
-    except:
-        return "AI 조언 생성 중 오류가 발생했습니다."
+        <form id="predictForm">
 
+            <div class="mb-3">
+                <label class="form-label">나이</label>
+                <input type="number" name="age" class="form-control" required>
+            </div>
 
-@app.route("/")
-def index():
-    return render_template("index.html")
+            <div class="mb-3">
+                <label class="form-label">공복 혈당(FBS)</label>
+                <input type="number" name="fbs" class="form-control" required>
+            </div>
 
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-success btn-lg">
+                    결과 보기
+                </button>
+            </div>
 
-@app.route("/predict", methods=["POST"])
-def predict():
-    try:
-        gender   = float(request.form.get("gender"))
-        age      = float(request.form.get("age"))
-        bmi      = float(request.form.get("bmi"))
-        sbp      = float(request.form.get("sbp"))
-        dbp      = float(request.form.get("dbp"))
-        glucose  = float(request.form.get("glucose"))
-        smoking  = float(request.form.get("smoking"))
-        drinking = float(request.form.get("drinking"))
+        </form>
 
-        X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
-        prob = float(model.predict_proba(X)[0][1])
+        <div class="text-center mt-3">
+            <button id="backToPage1" class="btn btn-secondary">
+                처음으로
+            </button>
+        </div>
 
-        prob_percent = round(prob * 100, 2)
+    </div>
 
-        risk_class = "high" if prob > THRESHOLD else "low"
-        risk_text  = "고위험" if prob > THRESHOLD else "저위험"
+    <!-- ====================== PAGE 3 (결과 페이지) ===================== -->
+    <div id="page3" style="display:none;">
 
-        advice = generate_advice(prob_percent)
+        <h2 class="mb-3">예측 결과</h2>
 
-        return render_template(
-            "result.html",
-            prob=prob_percent,
-            risk_class=risk_class,
-            risk_text=risk_text,
-            advice=advice
-        )
+        <p id="riskText" class="fs-4 fw-bold"></p>
+        <p id="aiAdvice" class="mt-3"></p>
 
-    except Exception as e:
-        return f"오류 발생: {str(e)}"
+        <div class="text-center mt-4">
+            <button id="restartBtn" class="btn btn-primary">
+                다시 예측하기
+            </button>
+        </div>
 
+    </div>
 
-if __name__ == "__main__":
-    app.run()
+</div>
+
+<!-- ====================== JS ===================== -->
+<script>
+    // 페이지 전환
+    document.getElementById("startBtn").onclick = () => {
+        showPage(2);
+    };
+
+    document.getElementById("backToPage1").onclick = () => {
+        showPage(1);
+    };
+
+    document.getElementById("restartBtn").onclick = () => {
+        showPage(1);
+    };
+
+    function showPage(pageNum) {
+        document.getElementById("page1").style.display = "none";
+        document.getElementById("page2").style.display = "none";
+        document.getElementById("page3").style.display = "none";
+
+        document.getElementById("page" + pageNum).style.display = "block";
+    }
+
+    // 예측 요청
+    document.getElementById("predictForm").onsubmit = async (event) => {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const data = Object.fromEntries(formData.entries());
+
+        const response = await fetch("/predict", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        document.getElementById("riskText").textContent =
+            `뇌졸중 발병 확률: ${result.prob}%`;
+
+        document.getElementById("aiAdvice").textContent =
+            result.advice || "";
+
+        showPage(3);
+    };
+</script>
+
+</body>
+</html>
