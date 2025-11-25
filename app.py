@@ -4,8 +4,8 @@ import numpy as np
 
 app = Flask(__name__)
 
+# 모델 로드
 model = joblib.load("stroke_model.pkl")
-THRESHOLD = 0.029698
 
 @app.route("/")
 def index():
@@ -13,11 +13,9 @@ def index():
 
 @app.route("/predict", methods=["POST"])
 def predict():
+
     try:
         data = request.get_json(force=True)
-
-        # 디버깅 print
-        print("📌 받은 데이터:", data, flush=True)
 
         X = np.array([
             float(data["gender"]),
@@ -30,8 +28,7 @@ def predict():
             float(data["drinking"])
         ]).reshape(1,-1)
 
-        print("📌 X shape:", X.shape, flush=True)
-
+        # 예측
         prob = float(model.predict_proba(X)[0][1]) * 100
         prob = round(prob,2)
 
@@ -42,8 +39,8 @@ def predict():
             risk_class = "result-medium"
             risk_text = "중위험"
         else:
-            risk_class = "저위험"
             risk_class = "result-low"
+            risk_text = "저위험"
 
         return jsonify({
             "prob": prob,
@@ -55,4 +52,3 @@ def predict():
     except Exception as e:
         print("❌ PREDICT ERROR:", str(e), flush=True)
         return jsonify({"error": str(e)}), 500
-
