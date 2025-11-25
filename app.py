@@ -4,8 +4,8 @@ import numpy as np
 
 app = Flask(__name__)
 
-# 모델 로드
 model = joblib.load("stroke_model.pkl")
+THRESHOLD = 0.029698
 
 @app.route("/")
 def index():
@@ -14,30 +14,21 @@ def index():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        print("📌 /predict called")
-        print("📌 request.json:", request.json)
-
         data = request.json
-        if data is None:
-            print("❌ request.json is None")
-            return jsonify({"error": "No JSON received"}), 400
 
         X = np.array([
-            float(data.get("gender", 0)),
-            float(data.get("age", 0)),
-            float(data.get("bmi", 0)),
-            float(data.get("sbp", 0)),
-            float(data.get("dbp", 0)),
-            float(data.get("glucose", 0)),
-            float(data.get("smoking", 0)),
-            float(data.get("drinking", 0))
+            float(data["gender"]),
+            float(data["age"]),
+            float(data["bmi"]),
+            float(data["sbp"]),
+            float(data["dbp"]),
+            float(data["glucose"]),
+            float(data["smoking"]),
+            float(data["drinking"])
         ]).reshape(1, -1)
-
-        print("📌 Input X:", X)
 
         prob = float(model.predict_proba(X)[0][1]) * 100
         prob = round(prob, 2)
-        print("📌 prob:", prob)
 
         if prob >= 20:
             risk_class = "result-high"
@@ -57,5 +48,4 @@ def predict():
         })
 
     except Exception as e:
-        print("🔥 ERROR in /predict:", str(e))
         return jsonify({"error": str(e)}), 500
