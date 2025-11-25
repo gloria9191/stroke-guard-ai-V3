@@ -16,29 +16,22 @@ print("✅ 모델 로드 완료")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-
-def get_val(form, key):
-    try:
-        return float(form.get(key, 0))
-    except:
-        return 0.0
-
-
 def get_llm_advice(data, prob):
     if not GROQ_API_KEY:
-        return "혈압·혈당 관리, 운동, 절주·금연이 중요합니다."
+        return "규칙적인 운동, 혈압/혈당 관리, 절주·금연을 실천해보세요."
 
     prompt = f"""
 당신은 서울대병원 신경과 전문의입니다.
 
 환자 정보:
 - 나이: {data['age']}세 | 성별: {'남성' if data['gender']==1 else '여성'}
-- BMI: {data['bmi']:.1f} | 혈압: {data['sbp']}/{data['dbp']}
-- 혈당: {data['glucose']:.1f}
-- 흡연: {data['smoking']} | 음주: {data['drinking']}
+- BMI: {data['bmi']} | 혈압: {data['sbp']}/{data['dbp']}
+- 공복혈당: {data['glucose']}
+- 흡연: {'예' if data['smoking']==1 else '아니오'}
+- 음주: {'예' if data['drinking']==1 else '아니오'}
+예측 확률: {prob:.1f}%
 
-뇌졸중 발생 확률은 {prob:.1f}%입니다.
-생활습관 조언을 5문장으로 작성해주세요.
+이 환자에게 따뜻하고 현실적인 조언을 5문장으로 주세요.
 """
 
     try:
@@ -51,53 +44,53 @@ def get_llm_advice(data, prob):
                 "max_tokens": 350
             },
             headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
-            timeout=15
+            timeout=15,
         )
         return r.json()["choices"][0]["message"]["content"].replace("\n", "<br>")
-    except:
-        return "일시적 지연입니다. 기본적인 혈압·혈당 관리가 필요합니다."
+
+    except Exception:
+        return "일시적 오류입니다. 생활습관 관리가 중요합니다."
 
 
 @app.route("/", methods=["GET"])
-def survey_page():
-    return render_template("survey.html")
+def home():
+    return render_template("index.html")
 
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    d = {
-        "gender": get_val(request.form, "gender"),
-        "age": get_val(request.form, "age"),
-        "bmi": get_val(request.form, "bmi"),
-        "sbp": get_val(request.form, "sbp"),
-        "dbp": get_val(request.form, "dbp"),
-        "glucose": get_val(request.form, "glucose"),
-        "smoking": get_val(request.form, "smoking"),
-        "drinking": get_val(request.form, "drinking"),
-    }
+    try:
+        d = {k: float(request.form[k]) for k in request.form}
 
-    X = np.array([[d[k] for k in d]])
-    prob = float(model.predict_proba(X)[0][1] * 100)
+        X = np.array([[d["gender"], d["age"], d["bmi"], d["sbp"], d["dbp"],
+                       d["glucose"], d["smoking"], d["drinking"]]])
 
-    if prob > 70:
-        risk_class = "result-high"
-        risk_text = "고위험"
-    elif prob > 30:
-        risk_class = "result-medium"
-        risk_text = "주의 필요"
-    else:
-        risk_class = "result-low"
-        risk_text = "안전"
+        prob = model.predict_proba(X)[0][1] * 100
 
-    advice = get_llm_advice(d, prob)
+        # 색상 구간
+        if prob > 70:
+            rc = "linear-gradient(135deg,#ff6b6b,#feca57)"
+            rt = "고위험"
+        elif prob > 30:
+            rc = "linear-gradient(135deg,#feca57,#ff9ff3)"
+            rt = "주의 필요"
+        else:
+            rc = "linear-gradient(135deg,#1dd1a1,#54a0ff)"
+            rt = "안전"
 
-    return render_template(
-        "result.html",
-        prob=f"{prob:.1f}",
-        risk_class=risk_class,
-        risk_text=risk_text,
-        advice=advice
-    )
+        advice = get_llm_advice(d, prob)
+
+        return render_template(
+            "index.html",
+            prob=f"{prob:.1f}",
+            risk_class=rc,
+            risk_text=rt,
+            advice=advice,
+            show_result=True
+        )
+
+    except Exception as e:
+        return f"<h1>Error</h1><p>{e}</p>"
 
 
 if __name__ == "__main__":
