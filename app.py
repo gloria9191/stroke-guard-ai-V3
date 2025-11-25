@@ -1,118 +1,101 @@
-import os
-import traceback
-from flask import Flask, render_template, request, jsonify
-import pickle
+from flask import Flask, render_template, request
+import joblib
 import numpy as np
+import os
 import requests
 
 app = Flask(__name__)
 
-print("DEBUG: Flask starting…")
-print("DEBUG: GROQ key exists?", os.getenv("GROQ_API_KEY") is not None)
+# ----------------------------
+# 1) 모델 로드
+# ----------------------------
+print("🔄 Loading stroke_model.pkl ...")
+model = joblib.load("stroke_model.pkl")
+print("✅ 모델 로드 완료")
 
-# ---------------------------
-# 모델 로드
-# ---------------------------
-try:
-    print("🔄 Loading stroke_model.pkl ...")
-    with open("stroke_model.pkl", "rb") as f:
-        model = pickle.load(f)
-    print("✅ 모델 로드 완료")
-except Exception as e:
-    print("❌ 모델 로드 실패:", e)
-    print(traceback.format_exc())
+THRESHOLD = 0.029698   # recall 0.915 달성했던 threshold
 
+# ----------------------------
+# 2) GROQ LLM (선택)
+# ----------------------------
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-# ---------------------------
-# 메인 페이지
-# ---------------------------
-@app.route('/')
-def index():
-    return render_template("index.html")
+def generate_advice(prob):
+    if not GROQ_API_KEY:
+        return "⚠️ AI 코멘트를 불러올 수 없습니다."
 
+    prompt = f"""
+    사용자의 뇌졸중 발병 확률이 {prob}%로 계산되었습니다.
+    의료 지식 기반으로 생활습관, 식단, 운동, 주의해야 할 증상 등을 포함하여
+    5줄 정도로 구체적인 조언을 해주세요.
+    """
 
-# ---------------------------
-# 예측 API
-# ---------------------------
-@app.route('/analyze', methods=['POST'])
-def analyze():
     try:
-        data = request.get_json()
-        print("DEBUG: Received input:", data)
-
-        # 필수 변수 체크
-        required = ["age", "fbs", "smoking", "exercise", "drinking", "bp_high"]
-        for r in required:
-            if r not in data:
-                return jsonify({"error": f"Missing input: {r}"}), 400
-
-        # float 변환
-        try:
-            age = float(data["age"])
-            fbs = float(data["fbs"])
-            bp_high = float(data["bp_high"])
-            smoking = int(data["smoking"])
-            exercise = int(data["exercise"])
-            drinking = int(data["drinking"])
-        except Exception as e:
-            print("❌ 변환 오류:", e)
-            return jsonify({"error": "Invalid number format"}), 400
-
-        # LightGBM 입력 (8개 feature만 임시)
-        X_input = np.array([[age, fbs, bp_high, smoking, exercise, drinking, 0, 0]])
-        print("DEBUG: Model Input:", X_input)
-
-        prob = model.predict_proba(X_input)[0][1]
-        print("DEBUG: Model Raw Probability:", prob)
-
-        # Groq API 호출
-        GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-        if not GROQ_API_KEY:
-            print("❌ Groq API Key 없음")
-            ai_comment = "AI 코멘트 생성 불가 (API key 없음)"
-        else:
-            groq_payload = {
-                "model": "llama3-70b-8192",
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": f"""
-                        아래 사람의 생활습관 데이터 기반으로 건강 코멘트를 한국어로 3줄 생성해줘.
-
-                        나이: {age}
-                        공복혈당: {fbs}
-                        음주: {drinking}
-                        운동: {exercise}
-                        흡연: {smoking}
-                        혈압: {bp_high}
-                        """
-                    }
-                ],
-                "temperature": 0.4
+        r = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [{"role": "user", "content": prompt}],
+                "max_tokens": 200
             }
+        )
+        res = r.json()
+        return res["choices"][0]["message"]["content"]
+    except:
+        return "⚠️ AI 조언 생성 중 오류가 발생했습니다."
 
-            groq_res = requests.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
-                json=groq_payload,
-                timeout=15
-            )
 
-            ai_comment = groq_res.json()["choices"][0]["message"]["content"]
+# ----------------------------
+# 3) ROUTES
+# ----------------------------
+@app.route("/")
+def index():
+    return render_template("index.html", show_result=False)
 
-        return jsonify({
-            "probability": float(prob),
-            "ai_comment": ai_comment
-        })
+
+@app.route("/predict", methods=["POST"])
+def predict():
+    try:
+        gender   = float(request.form.get("gender"))
+        age      = float(request.form.get("age"))
+        bmi      = float(request.form.get("bmi"))
+        sbp      = float(request.form.get("sbp"))
+        dbp      = float(request.form.get("dbp"))
+        glucose  = float(request.form.get("glucose"))
+        smoking  = float(request.form.get("smoking"))
+        drinking = float(request.form.get("drinking"))
 
     except Exception as e:
-        print("❌ ERROR in /analyze:", e)
-        print(traceback.format_exc())
-        return jsonify({"error": str(e)}), 500
+        return f"입력 오류 발생: {e}"
+
+    X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
+
+    prob = model.predict_proba(X)[0][1]
+    prob_percent = round(prob * 100, 2)
+
+    # 위험도 등급 분류
+    if prob >= THRESHOLD:
+        risk_class = "result-high"
+        risk_text = "고위험"
+    else:
+        risk_class = "result-low"
+        risk_text = "저위험"
+
+    advice = generate_advice(prob_percent)
+
+    return render_template(
+        "index.html",
+        show_result=True,
+        prob=prob_percent,
+        risk_class=risk_class,
+        risk_text=risk_text,
+        advice=advice
+    )
 
 
-# ---------------------------
-# 앱 실행
-# ---------------------------
-if __name__ == '__main__':
+# ----------------------------
+# 4) MAIN
+# ----------------------------
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)
