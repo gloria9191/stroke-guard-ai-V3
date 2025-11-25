@@ -1,55 +1,67 @@
 from flask import Flask, request, jsonify, render_template
 import joblib
 import numpy as np
-import requests
 import os
+import requests
 
 app = Flask(__name__)
 
+# ------------------------------------------------
+# 1) 모델 로드
+# ------------------------------------------------
+print("🔄 Loading stroke_model.pkl ...")
 model = joblib.load("stroke_model.pkl")
+print("✅ 모델 로드 완료")
 
+THRESHOLD = 0.029698   # recall 0.915 기준 threshold
+
+# ------------------------------------------------
+# 2) GROQ API 설정
+# ------------------------------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def generate_advice(prob):
     if not GROQ_API_KEY:
-        return "AI 조언을 불러올 수 없습니다."
+        return "AI 조언 생성이 활성화되지 않았습니다."
 
     prompt = f"""
-    사용자의 뇌졸중 발생 위험도는 {prob}%입니다.
-    의료 지식을 기반으로 식습관, 운동, 생활 습관, 주의해야 할 증상을 포함한 맞춤형 조언을 작성해주세요.
-    5줄 이내 한국어로 자연스럽게.
+    사용자의 뇌졸중 발병 확률은 {prob}% 입니다.
+
+    한국인 생활습관 기준으로,
+    - 식이요법
+    - 운동
+    - 혈압/혈당 관리
+    - 위험 신호 체크
+    - 금연/절주 조언
+
+    5줄 이내로 따뜻하고 이해하기 쉬운 문장으로 작성해주세요.
+    영어, 특수문자 없이 한국어로만 출력하세요.
     """
 
     try:
         r = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {GROQ_API_KEY}"
+            },
             json={
                 "model": "llama-3.1-8b-instant",
                 "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7
-            }
+                "temperature": 0.6
+            },
+            timeout=15
         )
-        return r.json()["choices"][0]["message"]["content"]
-    except:
+        ans = r.json()
+        return ans["choices"][0]["message"]["content"].strip()
+    except Exception as e:
         return "AI 조언 생성 중 오류가 발생했습니다."
 
 
-def preprocess(data):
-    X = np.array([
-        float(data["gender"]),
-        float(data["age"]),
-        float(data["bmi"]),
-        float(data["sbp"]),
-        float(data["dbp"]),
-        float(data["glucose"]),
-        float(data["smoking"]),
-        float(data["drinking"])
-    ]).reshape(1, -1)
-    return X
-
-
-@app.route("/")
+# ------------------------------------------------
+# 3) 라우팅
+# ------------------------------------------------
+@app.route("/", methods=["GET"])
 def index():
     return render_template("index.html")
 
@@ -57,34 +69,43 @@ def index():
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        data = request.json
-        X = preprocess(data)
+        data = request.get_json()
 
-        prob = float(model.predict_proba(X)[0][1]) * 100
-        prob = round(prob, 2)
+        gender    = float(data["gender"])
+        age       = float(data["age"])
+        bmi       = float(data["bmi"])
+        sbp       = float(data["sbp"])
+        dbp       = float(data["dbp"])
+        glucose   = float(data["glucose"])
+        smoking   = float(data["smoking"])
+        drinking  = float(data["drinking"])
 
-        if prob >= 20:
+        X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
+        proba = model.predict_proba(X)[0][1]
+        prob_percent = round(proba * 100, 1)
+
+        risk_class = "result-low"
+        risk_text  = "저위험"
+
+        if proba >= THRESHOLD:
             risk_class = "result-high"
-            risk_text = "고위험"
-        elif prob >= 10:
-            risk_class = "result-medium"
-            risk_text = "중위험"
-        else:
-            risk_class = "result-low"
-            risk_text = "저위험"
+            risk_text  = "고위험"
 
-        advice = generate_advice(prob)
+        advice = generate_advice(prob_percent)
 
         return jsonify({
-            "prob": prob,
+            "prob": prob_percent,
             "risk_text": risk_text,
             "risk_class": risk_class,
             "advice": advice
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"error": f"서버 오류: {str(e)}"})
 
 
+# ------------------------------------------------
+# 4) Render에서는 gunicorn이 실행 → run() 절대 사용 X
+# ------------------------------------------------
 if __name__ == "__main__":
-    app.run()
+    pass
