@@ -20,15 +20,15 @@
             background:linear-gradient(135deg,#0f0f23,#1a1a3a,#2d1b69);
             text-align:center;
         }
-        .title{font-size:4rem;font-weight:900;}
+        .title{font-size:clamp(3rem,8vw,6rem);font-weight:900;line-height:0.9;}
         .stroke{background:linear-gradient(90deg,#ff6b6b,#feca57);
             -webkit-background-clip:text;-webkit-text-fill-color:transparent;}
         .guard{color:#a29bfe;text-shadow:0 0 25px rgba(162,155,254,0.6);}
 
         .btn-start{
-            padding:16px 40px;
-            font-size:1.5rem;
-            margin-top:35px;
+            padding:18px 48px;
+            font-size:1.6rem;
+            margin-top:40px;
             border-radius:40px;
             background:#6c5ce7;
             color:white;
@@ -36,10 +36,11 @@
         }
 
         .card{background:white;color:#333;padding:35px;border-radius:25px}
-        .btn-opt{width:48%;padding:20px;font-size:1.2rem;border-radius:16px;
+        .btn-opt{width:48%;padding:20px;font-size:1.3rem;border-radius:16px;
                  border:2px solid #6c5ce7;color:#6c5ce7;}
         .btn-opt.active,.btn-opt:hover{background:#6c5ce7;color:white;}
 
+        .hidden{display:none!important}
     </style>
 </head>
 
@@ -48,68 +49,68 @@
 <!-- HERO -->
 <div class="hero" id="hero">
     <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
-    <p class="mt-3 fs-4">AI 기반 뇌졸중 발병 확률 예측</p>
+    <p class="mt-3 fs-4">AI 기반 실시간 뇌졸중 발병 확률 예측</p>
     <button class="btn-start" onclick="startSurvey()">시작하기</button>
 </div>
 
 <!-- SURVEY -->
-<div class="container mt-5 d-none" id="survey">
+<div class="container mt-5 hidden" id="survey">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="card">
 
-                <h3 class="text-center mb-4" id="question">1/8 성별을 선택해주세요</h3>
+                <h3 class="text-center mb-4" id="question">1/9 성별을 선택해주세요</h3>
 
                 <div id="step1">
                     <button class="btn-opt active" data-value="1">남성</button>
                     <button class="btn-opt" data-value="2">여성</button>
                 </div>
 
-                <div id="step2" class="d-none">
+                <div id="step2" class="hidden">
                     <input type="number" id="age" class="form-control form-control-lg text-center"
                            placeholder="나이 (예: 24)">
                 </div>
 
-                <div id="step3" class="d-none">
+                <div id="step3" class="hidden">
                     <input type="number" id="height" class="form-control form-control-lg text-center"
                            placeholder="키 (cm)">
                 </div>
 
-                <div id="step4" class="d-none">
+                <div id="step4" class="hidden">
                     <input type="number" id="weight" class="form-control form-control-lg text-center"
                            placeholder="몸무게 (kg)">
                 </div>
 
-                <div id="step5" class="d-none">
+                <div id="step5" class="hidden">
                     <input type="number" id="sbp" class="form-control form-control-lg text-center"
                            placeholder="수축기 혈압">
                 </div>
 
-                <div id="step6" class="d-none">
+                <div id="step6" class="hidden">
                     <input type="number" id="dbp" class="form-control form-control-lg text-center"
                            placeholder="이완기 혈압">
                 </div>
 
-                <div id="step7" class="d-none">
+                <div id="step7" class="hidden">
                     <input type="number" id="glucose" class="form-control form-control-lg text-center"
                            placeholder="공복혈당">
                 </div>
 
-                <div id="step8" class="d-none">
+                <div id="step8" class="hidden">
                     <button class="btn-opt active" data-value="0">흡연 안함</button>
                     <button class="btn-opt" data-value="1">흡연함</button>
                 </div>
 
-                <div id="step9" class="d-none">
+                <div id="step9" class="hidden">
                     <button class="btn-opt active" data-value="0">음주 안함</button>
                     <button class="btn-opt" data-value="1">음주함</button>
                 </div>
 
 
                 <div class="text-center mt-4">
-                    <button class="btn btn-secondary d-none" id="prev">이전</button>
+                    <button class="btn btn-secondary hidden" id="prev">이전</button>
                     <button class="btn btn-primary" id="next">다음</button>
-                    <button class="btn btn-danger d-none" id="submit">예측하기</button>
+                    <button class="btn btn-danger hidden" id="submit">예측하기</button>
                 </div>
 
             </div>
@@ -120,8 +121,8 @@
 <script>
 
 function startSurvey(){
-    document.getElementById("hero").classList.add("d-none");
-    document.getElementById("survey").classList.remove("d-none");
+    document.getElementById("hero").classList.add("hidden");
+    document.getElementById("survey").classList.remove("hidden");
 }
 
 let step = 1;
@@ -155,29 +156,31 @@ document.getElementById("next").onclick = () => {
     }
 
     // 다음 단계 전환
-    document.getElementById("step"+step).classList.add("d-none");
+    document.getElementById("step"+step).classList.add("hidden");
     step++;
-    document.getElementById("step"+step).classList.remove("d-none");
+    document.getElementById("step"+step).classList.remove("hidden");
 
-    // 마지막 단계
     if(step===9){
-        document.getElementById("next").classList.add("d-none");
-        document.getElementById("submit").classList.remove("d-none");
+        document.getElementById("next").classList.add("hidden");
+        document.getElementById("submit").classList.remove("hidden");
     }
 
-    if(step>1) document.getElementById("prev").classList.remove("d-none");
+    if(step>1) document.getElementById("prev").classList.remove("hidden");
+
     document.getElementById("question").innerText = `${step}/9`;
 };
 
 document.getElementById("prev").onclick = () => {
-    document.getElementById("step"+step).classList.add("d-none");
+    document.getElementById("step"+step).classList.add("hidden");
     step--;
-    document.getElementById("step"+step).classList.remove("d-none");
+    document.getElementById("step"+step).classList.remove("hidden");
 
-    if(step===1) document.getElementById("prev").classList.add("d-none");
+    if(step===1){
+        document.getElementById("prev").classList.add("hidden");
+    }
 
-    document.getElementById("submit").classList.add("d-none");
-    document.getElementById("next").classList.remove("d-none");
+    document.getElementById("submit").classList.add("hidden");
+    document.getElementById("next").classList.remove("hidden");
 
     document.getElementById("question").innerText = `${step}/9`;
 };
@@ -185,7 +188,7 @@ document.getElementById("prev").onclick = () => {
 
 document.getElementById("submit").onclick = () => {
 
-    // 로딩 화면 표시
+    // 로딩 표시
     document.getElementById("survey").innerHTML = `
         <div style="height:70vh;display:flex;flex-direction:column;justify-content:center;align-items:center;">
             <h2 class="mb-4">AI가 예측 중입니다...</h2>
@@ -194,7 +197,7 @@ document.getElementById("submit").onclick = () => {
     `;
 
     const form = document.createElement("form");
-    form.method = "POST";
+    form.method="POST";
     form.action = window.location.origin + "/predict";
 
     for(const k in data){
