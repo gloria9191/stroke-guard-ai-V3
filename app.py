@@ -47,21 +47,6 @@ def generate_advice(prob):
         return "건강을 위해 규칙적인 운동, 절주, 금연, 충분한 수면을 유지해보세요."
 
 
-    try:
-        r = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
-            json={
-                "model":"llama-3.1-70b-versatile",
-                "messages":[{"role":"user","content":prompt}],
-                "temperature":0.7
-            }
-        )
-        return r.json()["choices"][0]["message"]["content"]
-
-    except Exception:
-        return "건강관리: 규칙적인 운동과 식습관 관리를 통해 위험도를 낮출 수 있습니다."
-
 @app.route("/")
 def home():
     return render_template("index.html")
