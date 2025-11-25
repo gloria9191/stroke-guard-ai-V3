@@ -34,15 +34,12 @@
 
         .progress{height:12px;border-radius:12px;background:#e0e0e0}
         .progress-bar{background:linear-gradient(90deg,#a29bfe,#6c5ce7)}
-
-        .result-high{background:linear-gradient(135deg,#ff6b6b,#feca57)}
-        .result-low{background:linear-gradient(135deg,#1dd1a1,#54a0ff)}
     </style>
 </head>
 <body>
 
 <!-- HERO -->
-<div class="hero" {% if show_result %} style="display:none" {% endif %}>
+<div class="hero" id="hero">
     <div class="hero-content">
         <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
         <p class="subtitle">국내 500만 명 + 미국 라벨링 데이터 기반<br>차세대 뇌졸중 예측 모델</p>
@@ -56,7 +53,7 @@
 </div>
 
 <!-- 설문 -->
-<div class="container my-5" id="survey" {% if show_result %} style="display:none" {% endif %}>
+<div class="container my-5 d-none" id="survey">
     <div class="row justify-content-center">
         <div class="col-lg-9">
             <div class="card p-5">
@@ -110,26 +107,13 @@
     </div>
 </div>
 
-<!-- 결과 페이지 -->
-{% if show_result %}
-<div class="container my-5" id="result">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="card p-5 text-white text-center {{ risk_class }}">
-                <h1 class="display-1 fw-bold mb-3">{{ prob }}%</h1>
-                <h2 class="display-5 mb-5">{{ risk_text }}군</h2>
-                <div class="mt-5 fs-4 lh-lg px-4">{{ advice|safe }}</div>
-
-                <button onclick="location.href='/'"
-                        class="btn btn-light btn-lg mt-5 px-5">다시 검사하기</button>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
 
 <script>
+document.getElementById("hero").onclick = () => {
+    document.getElementById("hero").classList.add("d-none");
+    document.getElementById("survey").classList.remove("d-none");
+};
+
 const questions = [
     "성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요",
     "수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요",
@@ -139,7 +123,7 @@ const questions = [
 let step = 1;
 const data = { gender:1, smoking:0, drinking:0 };
 
-document.querySelectorAll(".btn-opt").forEach(btn=>{
+document.querySelectorAll(".btn-opt").forEach(btn => {
     btn.onclick = function(){
         this.parentNode.querySelectorAll(".btn-opt").forEach(b=>b.classList.remove("active"));
         this.classList.add("active");
@@ -188,16 +172,6 @@ document.getElementById("prev").onclick = () => {
 };
 
 document.getElementById("submit").onclick = () => {
-
-    // 로딩 화면
-    document.getElementById("survey").innerHTML = `
-        <div class="text-center py-5" style="height:60vh;display:flex;flex-direction:column;justify-content:center">
-            <h2 class="mb-4">AI가 분석 중입니다...</h2>
-            <div class="spinner-border text-primary" style="width:5rem;height:5rem"></div>
-        </div>
-    `;
-
-    // 기존 fetch → 문제 많아서 제출 방식 변경 (100% 성공)
     const form = document.createElement("form");
     form.method = "POST";
     form.action = "/predict";
