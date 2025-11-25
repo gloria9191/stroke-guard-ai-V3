@@ -35,8 +35,27 @@ def fetch_llm(prob, result_dict):
         result_dict["advice"] = "LLM 조언을 불러오지 못했습니다. 입력값을 기반으로 건강관리를 꾸준히 해주세요."
 
 
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
+    if request.method == "POST":
+        data = request.get_json()
+
+        # LLM 조언 생성 (네 기존 함수 사용)
+        prob = 0   # 모델 제거했으니까 필요 없다면 0 또는 계산된 값 넣기
+        advice = generate_advice(prob)
+
+        # risk_text / risk_class 계산 (원래 쓰던 로직 그대로)
+        risk_text = "저위험"
+        risk_class = "#1dd1a1"
+
+        return render_template(
+            "index.html",
+            prob=prob,
+            risk_text=risk_text,
+            risk_class=risk_class,
+            advice=advice
+        )
+
     return render_template("index.html")
 
 
