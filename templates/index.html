@@ -11,24 +11,39 @@
 
     <style>
         body {margin:0;background:#0f0f23;color:white;font-family:'Noto Sans KR',sans-serif;overflow-x:hidden}
-        .hero{min-height:100vh;background:linear-gradient(135deg,#0f0f23,#1a1a3a,#2d1b69);display:flex;align-items:center;justify-content:center;position:relative}
+
+        .hero{min-height:100vh;background:linear-gradient(135deg,#0f0f23 0%,#1a1a3a 50%,#2d1b69 100%);display:flex;align-items:center;justify-content:center;position:relative}
         .hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url('https://images.unsplash.com/photo-1638207213803-3c093c7cd506?auto=format&fit=crop&q=80') center/cover;opacity:0.15}
         .hero-content{position:relative;z-index:2;max-width:900px;text-align:center;padding:0 20px}
-        .title{font-size:clamp(4rem,10vw,7rem);font-weight:900;letter-spacing:-3px;margin:0 0 1.5rem;line-height:0.9;font-family:'Yoon Gothic 700',sans-serif}
-        .stroke{background:linear-gradient(90deg,#ff6b6b,#feca57);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-        .guard{color:#a29bfe;text-shadow:0 0 30px rgba(162,155,254,0.6)}
-        .subtitle{font-size:1.5rem;font-weight:300;margin-bottom:3rem;opacity:0.9;line-height:1.7}
-        .badges{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:4rem}
-        .badge{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:50px;font-weight:500}
-        .tagline{font-size:1.6rem;font-weight:400;opacity:0.9}
-        .icon{margin-right:12px;background:linear-gradient(135deg,#54a0ff,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
-        .card{background:white;color:#333;border-radius:28px;box-shadow:0 20px 60px rgba(80,40,150,0.2);transition:0.3s}
-        .btn-opt{width:48%;padding:22px;font-size:1.4rem;border:3px solid #6c5ce7;border-radius:20px;background:white;color:#6c5ce7;font-weight:700}
-        .btn-opt.active,.btn-opt:hover{background:#6c5ce7;color:white}
+        .title{font-size:clamp(4rem,10vw,7rem);font-weight:900;letter-spacing:-3px;margin:0 0 1.5rem;line-height:0.9;}
+        .stroke{background:linear-gradient(90deg,#ff6b6b,#feca57);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+        .guard{color:#a29bfe;text-shadow:0 0 30px rgba(162,155,254,0.6)}
+
+        .subtitle{font-size:1.5rem;font-weight:300;margin-bottom:3rem;opacity:0.9;line-height:1.7}
+        .badge{background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:50px;font-weight:500;margin:4px}
+
+        .card{background:rgba(255,255,255,0.95);color:#333;border-radius:28px;box-shadow:0 20px 60px rgba(80,40,150,0.2);}
+
+        .btn-opt{width:48%;padding:22px;font-size:1.4rem;border:3px solid #6c5ce7;border-radius:20px;background:white;color:#6c5ce7;font-weight:700;}
+        .btn-opt.active{background:#6c5ce7;color:white}
+
         .btn-step{background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:white;padding:18px 70px;border-radius:50px;font-size:1.4rem;font-weight:700}
-        .result-high{background:linear-gradient(135deg,#ff6b6b,#feca57)}
-        .result-low{background:linear-gradient(135deg,#1dd1a1,#54a0ff)}
+
+        .result-high{
+            background:linear-gradient(135deg,#ff4d4d,#ff9966) !important;
+        }
+        .result-low{
+            background:linear-gradient(135deg,#3aa0ff,#6bc1ff) !important;
+        }
+
+        .result-text-box{
+            word-break:break-word;
+            white-space:pre-line;
+            font-size:1.5rem;
+            line-height:1.7;
+            padding:20px;
+        }
     </style>
 </head>
 
@@ -38,92 +53,133 @@
 <div class="hero">
     <div class="hero-content">
         <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
-        <p class="subtitle">국내 500만 명 + 미국 의료데이터 기반<br>차세대 뇌졸중 위험 분석 서비스</p>
-        <div class="badges">
-            <span class="badge">정확도 기반 안정적 모델</span>
-            <span class="badge">뇌졸중 위험군 분류</span>
-            <span class="badge">AI 생활습관 코칭</span>
+        <p class="subtitle">국내 500만 명 + 미국 라벨링 데이터로 학습한 차세대 뇌졸중 예측 AI</p>
+        <div>
+            <span class="badge">다중 국가·다중 변수 모델</span>
+            <span class="badge">고위험군 민감도 집중 최적화</span>
+            <span class="badge">실시간 AI 라이프케어</span>
         </div>
-        <p class="tagline"><span class="icon">Brain</span>작은 변화가 큰 미래를 만듭니다</p>
     </div>
 </div>
 
 <!-- SURVEY -->
 <div class="container my-5" id="survey">
-    <div class="row justify-content-center"><div class="col-lg-9">
-        <div class="card p-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="card p-5">
 
-            <div class="progress mb-5"><div class="progress-bar" id="prog" style="width:12.5%"></div></div>
-            <h2 class="text-center mb-5" id="question">1/8 성별을 선택해주세요</h2>
+                <div class="progress mb-5"><div class="progress-bar" id="prog" style="width:12.5%"></div></div>
+                <h2 class="text-center mb-5" id="question">1/8 성별을 선택해주세요</h2>
 
-            <div id="step1" class="text-center mb-4">
-                <button class="btn btn-opt active" data-value="1">남성</button>
-                <button class="btn btn-opt" data-value="2">여성</button>
+                <div id="step1" class="text-center mb-4">
+                    <button class="btn btn-opt active" data-value="1">남성</button>
+                    <button class="btn btn-opt" data-value="2">여성</button>
+                </div>
+
+                <div id="step2" class="d-none text-center">
+                    <input type="number" class="form-control form-control-lg text-center" id="age" placeholder="나이 (예: 65)">
+                </div>
+
+                <div id="step3" class="d-none text-center">
+                    <input type="number" class="form-control form-control-lg text-center" id="height" placeholder="키 (cm)">
+                    <input type="number" class="form-control form-control-lg text-center mt-3" id="weight" placeholder="몸무게 (kg)">
+                </div>
+
+                <div id="step4" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="sbp" placeholder="수축기 혈압 (예: 140)"></div>
+                <div id="step5" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="dbp" placeholder="이완기 혈압 (예: 90)"></div>
+                <div id="step6" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="glucose" placeholder="공복 혈당 (예: 120)"></div>
+
+                <div id="step7" class="d-none text-center mb-4">
+                    <p class="fs-3 fw-bold mb-4">흡연하시나요?</p>
+                    <button class="btn btn-opt active" data-value="0">아니오</button>
+                    <button class="btn btn-opt" data-value="1">예</button>
+                </div>
+
+                <div id="step8" class="d-none text-center mb-4">
+                    <p class="fs-3 fw-bold mb-4">음주하시나요?</p>
+                    <button class="btn btn-opt active" data-value="0">아니오</button>
+                    <button class="btn btn-opt" data-value="1">예</button>
+                </div>
+
+                <div class="text-center mt-5">
+                    <button id="prev" class="btn btn-outline-secondary btn-lg me-4 d-none">이전</button>
+                    <button id="next" class="btn btn-step">다음</button>
+                    <button id="submit" class="btn btn-danger btn-lg d-none">지금 예측하기</button>
+                </div>
+
             </div>
-            <div id="step2" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="age" placeholder="나이 (예: 65)"></div>
-            <div id="step3" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="bmi" placeholder="BMI (예: 25.4)"></div>
-            <div id="step4" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="sbp" placeholder="수축기 혈압"></div>
-            <div id="step5" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="dbp" placeholder="이완기 혈압"></div>
-            <div id="step6" class="d-none text-center"><input type="number" class="form-control form-control-lg text-center" id="glucose" placeholder="공복 혈당"></div>
-
-            <div id="step7" class="d-none text-center mb-4">
-                <p class="fs-3 fw-bold mb-4">흡연하시나요?</p>
-                <button class="btn btn-opt active" data-value="0">아니오</button>
-                <button class="btn btn-opt" data-value="1">예</button>
-            </div>
-
-            <div id="step8" class="d-none text-center mb-4">
-                <p class="fs-3 fw-bold mb-4">음주하시나요?</p>
-                <button class="btn btn-opt active" data-value="0">아니오</button>
-                <button class="btn btn-opt" data-value="1">예</button>
-            </div>
-
-            <div class="text-center mt-5">
-                <button id="prev" class="btn btn-outline-secondary btn-lg me-4 d-none">이전</button>
-                <button id="next" class="btn btn-step">다음</button>
-                <button id="submit" class="btn btn-danger btn-lg d-none">지금 예측하기</button>
-            </div>
-
         </div>
-    </div></div>
+    </div>
 </div>
 
 <!-- RESULT -->
 <div class="container my-5 d-none" id="result">
-    <div class="row justify-content-center"><div class="col-lg-8">
-        <div id="resultCard" class="card p-5 text-white text-center"></div>
-    </div></div>
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card p-5 text-white text-center" id="resultCard">
+                <!-- JS가 내용 채움 -->
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- JS (script.js 사용 안함) -->
 <script>
 const questions = [
-"성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요",
-"수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요",
-"공복 혈당을 입력해주세요","흡연하시나요?","음주하시나요?"
+    "성별을 선택해주세요",
+    "나이를 입력해주세요",
+    "키와 몸무게를 입력해주세요 (BMI 자동 계산)",
+    "수축기 혈압을 입력해주세요",
+    "이완기 혈압을 입력해주세요",
+    "공복 혈당을 입력해주세요",
+    "흡연하시나요?",
+    "음주하시나요?"
 ];
 
 let step = 1;
-let data = { gender:1, smoking:0, drinking:0 };
+const data = { gender:1, smoking:0, drinking:0 };
 
-// 버튼 클릭 활성화 FIX
-document.addEventListener("click", e => {
-    if(e.target.classList.contains("btn-opt")){
-        e.target.parentNode.querySelectorAll(".btn-opt").forEach(x => x.classList.remove("active"));
-        e.target.classList.add("active");
+document.querySelectorAll(".btn-opt").forEach(b=>{
+    b.onclick = ()=> {
+        b.parentNode.querySelectorAll(".btn-opt").forEach(x=>x.classList.remove("active"));
+        b.classList.add("active");
     }
 });
 
-document.getElementById("next").onclick = () => {
-    if(step === 1) data.gender = document.querySelector("#step1 .active").dataset.value;
-    if(step === 7) data.smoking = document.querySelector("#step7 .active").dataset.value;
-    if(step === 8) data.drinking = document.querySelector("#step8 .active").dataset.value;
+document.getElementById("next").onclick = ()=>{
 
-    if(step >= 2 && step <= 6){
-        const keys = ["","age","bmi","sbp","dbp","glucose"];
-        const v = document.getElementById(keys[step-1]).value.trim();
-        if(!v){ alert("정확한 값을 입력해주세요"); return; }
-        data[keys[step-1]] = parseFloat(v);
+    if(step===1) data.gender = document.querySelector("#step1 .active").dataset.value;
+    if(step===7) data.smoking = document.querySelector("#step7 .active").dataset.value;
+    if(step===8) data.drinking = document.querySelector("#step8 .active").dataset.value;
+
+    if(step===2){
+        let age = document.getElementById("age").value;
+        if(!age){alert("나이를 입력해주세요");return;}
+        data.age = parseFloat(age);
+    }
+
+    if(step===3){
+        let h = document.getElementById("height").value;
+        let w = document.getElementById("weight").value;
+        if(!h || !w){ alert("키와 몸무게를 모두 입력해주세요"); return; }
+        data.bmi = (w / ((h/100)**2)).toFixed(1);
+    }
+
+    if(step===4){
+        let v = document.getElementById("sbp").value;
+        if(!v){alert("수축기 혈압을 입력해주세요");return;}
+        data.sbp = parseFloat(v);
+    }
+
+    if(step===5){
+        let v = document.getElementById("dbp").value;
+        if(!v){alert("이완기 혈압을 입력해주세요");return;}
+        data.dbp = parseFloat(v);
+    }
+
+    if(step===6){
+        let v = document.getElementById("glucose").value;
+        if(!v){alert("공복 혈당을 입력해주세요");return;}
+        data.glucose = parseFloat(v);
     }
 
     if(step < 8){
@@ -131,62 +187,64 @@ document.getElementById("next").onclick = () => {
         step++;
         document.getElementById("step"+step).classList.remove("d-none");
 
-        document.getElementById("question").innerText = `${step}/8 ${questions[step-1]}`;
-        document.getElementById("prog").style.width = (step/8*100)+"%";
+        document.getElementById("question").innerText = step+"/8 "+questions[step-1];
+        document.getElementById("prog").style.width = (step/8)*100 + "%";
         document.getElementById("prev").classList.remove("d-none");
 
-        if(step === 8){
+        if(step===8){
             document.getElementById("next").classList.add("d-none");
             document.getElementById("submit").classList.remove("d-none");
         }
     }
 };
 
-document.getElementById("prev").onclick = () => {
+document.getElementById("prev").onclick = ()=>{
     document.getElementById("step"+step).classList.add("d-none");
     step--;
     document.getElementById("step"+step).classList.remove("d-none");
 
-    document.getElementById("question").innerText = `${step}/8 ${questions[step-1]}`;
-    document.getElementById("prog").style.width = (step/8*100)+"%";
+    document.getElementById("question").innerText = step+"/8 "+questions[step-1];
+    document.getElementById("prog").style.width = (step/8)*100 + "%";
 
-    if(step === 1) document.getElementById("prev").classList.add("d-none");
-
+    if(step===1) document.getElementById("prev").classList.add("d-none");
     document.getElementById("submit").classList.add("d-none");
     document.getElementById("next").classList.remove("d-none");
 };
 
-document.getElementById("submit").onclick = () => {
+document.getElementById("submit").onclick = ()=>{
+
     document.getElementById("survey").classList.add("d-none");
     document.getElementById("result").classList.remove("d-none");
 
     document.getElementById("resultCard").innerHTML = `
         <h2>AI가 분석 중입니다...</h2>
-        <div class="spinner-border text-light" style="width:4rem;height:4rem;"></div>
-        <p class="mt-4 fs-4 text-muted">잠시만 기다려주세요</p>
+        <div class="spinner-border text-light" style="width:4rem;height:4rem"></div>
+        <p class="mt-4 fs-4">잠시만 기다려주세요</p>
     `;
 
     fetch("/predict", {
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{ "Content-Type":"application/json" },
         body:JSON.stringify(data)
     })
-    .then(r => r.json())
-    .then(res => {
-        document.getElementById("resultCard").className =
-            "card p-5 text-white text-center " + res.risk_class;
+    .then(r=>r.json())
+    .then(res=>{
+        const card = document.getElementById("resultCard");
 
-        document.getElementById("resultCard").innerHTML = `
+        card.classList.remove("result-high","result-low");
+        card.classList.add(res.risk_class);
+
+        card.innerHTML = `
             <h1 class="display-1 fw-bold mb-3">${res.prob}%</h1>
-            <h2 class="display-5 mb-5">${res.risk_text}군</h2>
-            <div class="mt-5 fs-3 lh-lg px-4">${res.advice}</div>
+            <h2 class="display-5 mb-4">${res.risk_text}군</h2>
+            <div class="result-text-box">${res.advice}</div>
             <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
         `;
     })
-    .catch(() => {
+    .catch(()=>{
         document.getElementById("resultCard").innerHTML = `
             <h2>서버 오류 발생</h2>
-            <button class="btn btn-light btn-lg mt-5" onclick="location.reload()">다시 시도</button>
+            <button class="btn btn-light mt-4" onclick="location.reload()">다시 시도</button>
         `;
     });
 };
