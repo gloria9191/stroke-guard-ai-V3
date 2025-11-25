@@ -146,7 +146,8 @@ document.querySelectorAll(".btn-opt").forEach(btn=>{
 document.getElementById("next").onclick = ()=>{
     if(step === 1) data.gender = document.querySelector("#step1 .active").dataset.value;
     if(step >= 2 && step <= 6){
-        const key = ["","age","bmi","sbp","dbp","glucose"][step];
+        const key = ["","gender","age","bmi","sbp","dbp","glucose"][step];
+
         const v = document.getElementById(key).value.trim();
         if(!v){ alert("값을 입력해주세요"); return; }
         data[key] = v;
