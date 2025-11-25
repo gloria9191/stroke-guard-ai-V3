@@ -186,13 +186,40 @@ document.getElementById("submit").onclick = () => {
         </div>
     `;
 
-    fetch("/predict", {
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:new URLSearchParams(data)
-    })
-    .then(r=>r.text())
-    .then(html=>document.body.innerHTML = html)
+    document.getElementById("submit").onclick = () => {
+
+    const required = ["age","bmi","sbp","dbp","glucose"];
+    for(const k of required){
+        const v = document.getElementById(k).value.trim();
+        if(!v || isNaN(v)){ alert("정확한 값을 입력해주세요"); return; }
+        data[k] = v;
+    }
+
+    // 로딩 화면 표시
+    document.getElementById("survey").innerHTML = `
+        <div style="height:70vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+            <h2 class="mb-4">AI가 예측 중입니다...</h2>
+            <div class="spinner-border text-light" style="width:5rem;height:5rem;border-width:6px;"></div>
+        </div>
+    `;
+
+    // ✔ fetch 대신 HTML form으로 강제 제출
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = "/predict";
+
+    for(const key in data){
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = key;
+        input.value = data[key];
+        form.appendChild(input);
+    }
+
+    document.body.appendChild(form);
+    form.submit();
+};
+
     .catch(()=>{
         document.body.innerHTML = `
             <div class="text-center py-5">
