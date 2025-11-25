@@ -188,6 +188,7 @@ document.querySelectorAll(".btn-opt").forEach(b => b.onclick = function(){
 
 /* ------------------------ 예측 요청 ------------------------ */
 document.getElementById("submit").onclick = () => {
+    consdocument.getElementById("submit").onclick = () => {
     const req = ["age","bmi","sbp","dbp","glucose"];
     for(let k of req){
         const v = document.getElementById(k).value.trim();
@@ -198,16 +199,20 @@ document.getElementById("submit").onclick = () => {
         data[k] = parseFloat(v);
     }
 
-    // 로딩 화면으로 교체
+    // survey 숨기기
     document.getElementById("survey").classList.add("d-none");
-    document.body.insertAdjacentHTML("beforeend",
-        `<div id="loading" style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column">
-            <h2>AI가 분석 중입니다...</h2>
-            <div class="spinner-border text-primary" style="width:5rem;height:5rem;"></div>
-            <p class="mt-4 fs-3 text-muted">잠시만 기다려주세요</p>
-        </div>`
-    );
 
+    // 로딩 표시 (작게, 중앙에)
+    document.getElementById("result").classList.remove("d-none");
+    document.getElementById("resultCard").innerHTML = `
+        <div class="text-center py-5">
+            <h2>AI가 분석 중입니다...</h2>
+            <div class="spinner-border text-primary" style="width:4rem;height:4rem;"></div>
+            <p class="mt-4 fs-4 text-muted">잠시만 기다려주세요</p>
+        </div>
+    `;
+
+    // 서버로 예측 요청
     fetch("/predict", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
@@ -215,24 +220,26 @@ document.getElementById("submit").onclick = () => {
     })
     .then(r => r.json())
     .then(res => {
-        document.getElementById("loading").remove();
+        // 결과 표시
+        document.getElementById("resultCard").className =
+            "card p-5 text-white text-center " + res.risk_class;
 
-        // 결과 페이지에 값 넣기
-        document.getElementById("resultProb").innerText = res.prob + "%";
-        document.getElementById("resultText").innerText = res.risk_text;
-        document.getElementById("resultAdvice").innerHTML = res.advice;
-
-        // 위험도에 따라 색 적용
-        const card = document.getElementById("resultCard");
-        card.classList.remove("result-high","result-medium","result-low");
-        card.classList.add(res.risk_class);
-
-        document.getElementById("result").classList.remove("d-none");
+        document.getElementById("resultCard").innerHTML = `
+            <h1 class="display-1 fw-bold mb-3">${res.prob}%</h1>
+            <h2 class="display-5 mb-5">${res.risk_text}군</h2>
+            <div class="mt-5 fs-3 lh-lg px-4">${res.advice}</div>
+            <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
+        `;
     })
     .catch(() => {
-        document.body.innerHTML = `<div class="text-center py-5"><h1>일시적 오류 발생</h1><button class="btn btn-primary" onclick="location.reload()">다시 시도</button></div>`;
+        document.getElementById("resultCard").innerHTML = `
+            <div class="text-center py-5">
+                <h1>오류가 발생했습니다</h1>
+                <button class="btn btn-primary mt-4" onclick="location.reload()">다시 시도</button>
+            </div>`;
     });
 };
+
 </script>
 
 </body>
