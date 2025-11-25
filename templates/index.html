@@ -38,7 +38,7 @@
 
 <body>
 
-<!-- HERO SECTION -->
+<!-- HERO -->
 <div class="hero">
     <div class="hero-content">
         <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
@@ -107,26 +107,13 @@
     </div></div>
 </div>
 
-<!-- RESULT SECTION -->
+<!-- RESULT -->
 <div class="container my-5 d-none" id="result">
     <div class="row justify-content-center"><div class="col-lg-8">
         <div class="card p-5 text-white text-center" id="resultCard">
-
-            <!-- 로딩 -->
-            <div id="loading" class="d-none">
-                <h2>AI가 분석 중입니다...</h2>
-                <div class="spinner-border text-primary" style="width:4rem;height:4rem;"></div>
-                <p class="mt-4 fs-4 text-muted">잠시만 기다려주세요</p>
-            </div>
-
-            <!-- 예측 결과 -->
-            <div id="finalResult" class="d-none">
-                <h1 class="display-1 fw-bold mb-3" id="resultProb"></h1>
-                <h2 class="display-5 mb-5" id="resultText"></h2>
-                <div class="mt-5 fs-3 lh-lg px-4" id="resultAdvice"></div>
-                <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
-            </div>
-
+            <h2>AI가 분석 중입니다...</h2>
+            <div class="spinner-border text-primary" style="width:4rem;height:4rem;"></div>
+            <p class="mt-4 fs-4 text-muted">잠시만 기다려주세요</p>
         </div>
     </div></div>
 </div>
@@ -146,22 +133,26 @@ const questions = [
 let step = 1;
 const data = { gender:1, smoking:0, drinking:0 };
 
-document.querySelectorAll(".btn-opt").forEach(btn=>{
-    btn.onclick = function(){
+document.querySelectorAll(".btn-opt").forEach(b => {
+    b.onclick = function(){
         this.parentNode.querySelectorAll(".btn-opt").forEach(x => x.classList.remove("active"));
         this.classList.add("active");
     };
 });
 
 document.getElementById("next").onclick = () => {
-    if(step === 1) data.gender = document.querySelector("#step1 .active").dataset.value;
-    if(step === 7) data.smoking = document.querySelector("#step7 .active").dataset.value;
+
+    if(step === 1) data.gender   = document.querySelector("#step1 .active").dataset.value;
+    if(step === 7) data.smoking  = document.querySelector("#step7 .active").dataset.value;
     if(step === 8) data.drinking = document.querySelector("#step8 .active").dataset.value;
 
     if(step >= 2 && step <= 6){
         const keys = ["","age","bmi","sbp","dbp","glucose"];
         const val = document.getElementById(keys[step-1]).value.trim();
-        if(!val || isNaN(val) || parseFloat(val)<=0){ alert("정확한 값을 입력해주세요"); return; }
+        if(!val || isNaN(val) || parseFloat(val) <= 0){
+            alert("정확한 값을 입력해주세요");
+            return;
+        }
         data[keys[step-1]] = parseFloat(val);
     }
 
@@ -174,7 +165,7 @@ document.getElementById("next").onclick = () => {
         document.getElementById("prog").style.width = (step/8*100) + "%";
         document.getElementById("prev").classList.remove("d-none");
 
-        if(step===8){
+        if(step === 8){
             document.getElementById("next").classList.add("d-none");
             document.getElementById("submit").classList.remove("d-none");
         }
@@ -189,7 +180,7 @@ document.getElementById("prev").onclick = () => {
     document.getElementById("question").innerText = step + "/8 " + questions[step-1];
     document.getElementById("prog").style.width = (step/8*100) + "%";
 
-    if(step===1) document.getElementById("prev").classList.add("d-none");
+    if(step === 1) document.getElementById("prev").classList.add("d-none");
     document.getElementById("submit").classList.add("d-none");
     document.getElementById("next").classList.remove("d-none");
 };
@@ -205,12 +196,17 @@ document.getElementById("submit").onclick = () => {
         data[k] = parseFloat(v);
     }
 
-    /* 화면 전환 */
     document.getElementById("survey").classList.add("d-none");
     document.getElementById("result").classList.remove("d-none");
-    document.getElementById("loading").classList.remove("d-none");
 
-    /* 서버 예측 요청 */
+    document.getElementById("resultCard").innerHTML = `
+        <div class="text-center py-5">
+            <h2>AI가 분석 중입니다...</h2>
+            <div class="spinner-border text-primary" style="width:4rem;height:4rem;"></div>
+            <p class="mt-4 fs-4 text-muted">잠시만 기다려주세요</p>
+        </div>
+    `;
+
     fetch("/predict", {
         method:"POST",
         headers:{ "Content-Type":"application/json" },
@@ -219,30 +215,36 @@ document.getElementById("submit").onclick = () => {
     .then(r => r.json())
     .then(res => {
 
-        document.getElementById("loading").classList.add("d-none");
-        document.getElementById("finalResult").classList.remove("d-none");
+        if(res.error){
+            document.getElementById("resultCard").innerHTML = `
+                <div class="text-center py-5">
+                    <h1>예측 오류</h1>
+                    <p>${res.error}</p>
+                </div>
+            `;
+            return;
+        }
 
         document.getElementById("resultCard").className =
             "card p-5 text-white text-center " + res.risk_class;
 
-        document.getElementById("resultProb").innerText = res.prob + "%";
-        document.getElementById("resultText").innerText = res.risk_text + "군";
-        document.getElementById("resultAdvice").innerHTML = res.advice;
+        document.getElementById("resultCard").innerHTML = `
+            <h1 class="display-1 fw-bold mb-3">${res.prob}%</h1>
+            <h2 class="display-5 mb-5">${res.risk_text}군</h2>
+            <div class="mt-5 fs-3 lh-lg px-4">${res.advice}</div>
+            <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
+        `;
     })
-    .catch(()=>{
-
-        document.getElementById("loading").classList.add("d-none");
-        document.getElementById("finalResult").classList.remove("d-none");
-
-        document.getElementById("resultCard").className = "card p-5 text-white text-center bg-danger";
-
-        document.getElementById("resultProb").innerText = "오류";
-        document.getElementById("resultText").innerText = "서버 응답 실패";
-        document.getElementById("resultAdvice").innerText = "잠시 후 다시 시도해주세요.";
+    .catch(() => {
+        document.getElementById("resultCard").innerHTML = `
+            <div class="text-center py-5">
+                <h1>서버 통신 오류</h1>
+                <button class="btn btn-primary mt-4" onclick="location.reload()">다시 시도</button>
+            </div>
+        `;
     });
 };
 </script>
 
 </body>
 </html>
-ㅍ
