@@ -16,13 +16,36 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def generate_advice(prob):
     if not GROQ_API_KEY:
-        return "생활습관 관리로 건강을 유지하세요."
+        return "생활습관 관리와 정기검진을 통해 꾸준히 건강을 지켜보세요."
 
-    prompt = f"""사용자의 뇌졸중 발병 확률은 {prob}% 입니다.
-고혈압·고혈당·흡연·음주·스트레스·운동 등을 고려해
-5줄 이내의 구체적이고 실천 가능한 건강 조언을 한국어로 작성하세요.
-불필요한 특수문자(*, •, -, 숫자 자동 생성 등) 절대 넣지 마세요.
-"""
+    prompt = f"""
+    사용자의 뇌졸중 발병 확률이 {prob}%로 계산되었습니다.
+    의료 지식을 기반으로 생활습관, 식단, 운동, 주의해야 할 증상 등을 포함하여
+    5줄 정도로 구체적인 조언을 해주세요.
+    """
+
+    try:
+        r = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {GROQ_API_KEY}"
+            },
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [{"role": "user", "content": prompt}],
+                "temperature": 0.7,
+            },
+            timeout=10
+        )
+
+        resp = r.json()
+        return resp["choices"][0]["message"]["content"]
+
+    except Exception as e:
+        # 절대 JSON을 깨지 않음
+        return "건강을 위해 규칙적인 운동, 절주, 금연, 충분한 수면을 유지해보세요."
+
 
     try:
         r = requests.post(
