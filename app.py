@@ -1,12 +1,49 @@
-from flask import Flask, request, make_response
+from flask import Flask, request, render_template_string
 import os
 import requests
 
 app = Flask(__name__)
 
-# -----------------------
-#  HTML 그대로 반환
-# -----------------------
+# ============================
+# 1) AI 조언 생성기 (한국어만)
+# ============================
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+def make_advice(prob):
+    if not GROQ_API_KEY:
+        return "AI 조언을 불러올 수 없습니다."
+
+    prompt = f"""
+당신의 뇌졸중 위험도는 {prob}%입니다.
+
+반드시 '한국어만' 사용하여,
+의학적으로 근거 있는 생활습관, 식단, 운동, 관리 포인트 등을
+5줄 이내로 구체적이고 자연스럽게 작성해주세요.
+
+외국어나 특수문자(*, %, #, $ 등)는 절대 사용하지 마세요.
+"""
+
+    try:
+        r = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {GROQ_API_KEY}"
+            },
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [{"role":"user","content": prompt}]
+            },
+            timeout=8
+        )
+        return r.json()["choices"][0]["message"]["content"]
+    except:
+        return "생활 관리 조언을 불러오는 중 오류가 발생했습니다."
+
+
+# ============================
+# 2) HTML — 설문조사 + 출력 통합본
+# ============================
 HTML = """
 <!DOCTYPE html>
 <html lang="ko">
@@ -158,72 +195,67 @@ document.getElementById("submit").onclick = () => {
 </html>
 """
 
-# -----------------------
-# LLM 함수
-# -----------------------
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-def generate_advice(prob):
-    if not GROQ_API_KEY:
-        return "AI 설명을 불러올 수 없습니다. (API KEY 없음)"
-
-    prompt = f"""
-    사용자의 뇌졸중 위험도는 {prob}% 입니다.
-    생활습관, 식습관, 운동, 관리 팁을 5줄로 알려줘.
-    """
-
-    try:
-        r = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
-            json={
-                "model": "llama-3.3-70b-versatile",
-                "messages": [
-                    {"role":"user", "content": prompt}
-                ]
-            },
-            timeout=20
-        )
-        data = r.json()
-        return data["choices"][0]["message"]["content"]
-
-    except Exception as e:
-        return f"AI 생성 중 오류 발생: {str(e)}"
-
-
-# -----------------------
-# 메인 페이지
-# -----------------------
+# ============================
+# 3) 단 하나의 라우트만
+# ============================
 @app.route("/", methods=["GET", "POST"])
 def index():
-    if request.method == "POST":
+    if request.method == "GET":
+        return render_template_string(HTML)
 
-        # 1) JSON이 아니라 form 되어있으므로 이렇게 받음
-        data = request.form.to_dict()
+    # POST → 설문조사 결과 제출
+    gender = int(request.form.get("gender", 1))
+    age = float(request.form.get("age", 50))
+    bmi = float(request.form.get("bmi", 23))
+    sbp = float(request.form.get("sbp", 120))
+    dbp = float(request.form.get("dbp", 80))
+    glucose = float(request.form.get("glucose", 90))
+    smoking = int(request.form.get("smoking", 0))
+    drinking = int(request.form.get("drinking", 0))
 
-        # 2) prob은 고정값 or 계산값 (지금은 0~5% 프리셋)
-        prob = 3.6
+    # -------------------------
+    # 예측 → LLM 기반 가짜 확률 생성
+    # (실제 모델은 빼달라고 했으므로 제거)
+    # -------------------------
+    prob = (
+        age * 0.07 +
+        bmi * 0.1 +
+        sbp * 0.08 +
+        dbp * 0.05 +
+        (glucose - 70) * 0.06 +
+        smoking * 5 +
+        drinking * 3
+    ) / 10
 
-        advice = generate_advice(prob)
+    prob = round(max(0, min(prob, 45)), 1)   # 0~45% 사이 정규화
 
-        # 3) 결과 HTML 생성
-        result_html = f"""
-        <html><body>
-        <div style='padding:40px;text-align:center;font-size:40px;'>
-            <h1>{prob}%</h1>
-            <h2>저위험군</h2>
-            <div style='margin-top:30px;font-size:24px;white-space:pre-line;'>{advice}</div>
-            <br><br>
-            <button onclick='location.reload()' style='padding:15px 40px;font-size:20px;'>다시 검사하기</button>
-        </div>
-        </body></html>
-        """
+    # 위험군 판정
+    if prob >= 15:
+        risk_text = "고위험"
+        risk_class = "result-high"
+    elif prob >= 7:
+        risk_text = "중위험"
+        risk_class = "result-medium"
+    else:
+        risk_text = "저위험"
+        risk_class = "result-low"
 
-        return make_response(result_html)
+    # LLM 조언 호출
+    advice = make_advice(prob)
 
-    # GET 요청 → 설문 HTML 그대로 출력
-    return HTML
+    # HTML 결과 렌더링
+    return f"""
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;background:#0f0f23;color:white;font-family:'Noto Sans KR',sans-serif;text-align:center;padding:40px">
+        <h1 class="display-1 fw-bold mb-3">{prob}%</h1>
+        <h2 class="display-5 mb-5">{risk_text}군</h2>
+        <div class="mt-5 fs-3 lh-lg px-4">{advice}</div>
+        <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.href='/'">다시 검사하기</button>
+    </div>
+    """
 
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+# ============================
+# 4) 엔트리포인트 (run 절대 없음)
+# ============================
+# Render는 gunicorn이 알아서 실행하므로 run() 금지
