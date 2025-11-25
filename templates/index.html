@@ -194,8 +194,8 @@ document.getElementById("submit").onclick = () => {
     `;
 
     const form = document.createElement("form");
-    form.method="POST";
-    form.action="/predict";
+    form.method = "POST";
+    form.action = window.location.origin + "/predict";
 
     for(const k in data){
         const input=document.createElement("input");
