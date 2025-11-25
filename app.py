@@ -13,39 +13,66 @@ THRESHOLD = 0.029698
 
 # GROQ LLM
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+import requests
+import json
 
 def generate_advice(prob):
+    # 기본 fallback
+    fallback = (
+        "1. 규칙적인 유산소 운동을 유지하세요.<br>"
+        "2. 염분과 당분을 줄이고 채소·과일을 충분히 섭취하세요.<br>"
+        "3. 흡연은 즉시 중단하고 음주는 절주하세요.<br>"
+        "4. 혈압·혈당을 주기적으로 점검하세요.<br>"
+        "5. 체중 관리와 스트레스 조절에 신경 쓰세요."
+    )
+    
     if not GROQ_API_KEY:
-        return "생활습관 관리와 정기검진을 통해 꾸준히 건강을 지켜보세요."
-
-    prompt = f"""
-    사용자의 뇌졸중 발병 확률이 {prob}%로 계산되었습니다.
-    의료 지식을 기반으로 생활습관, 식단, 운동, 주의해야 할 증상 등을 포함하여
-    5줄 정도로 구체적인 조언을 해주세요.
-    """
+        return fallback
 
     try:
-        r = requests.post(
+        prompt = f"""
+        사용자의 뇌졸중 발병 확률이 {prob:.2f}%입니다.
+        위험도에 맞춰 생활습관·식단·운동 5가지 조언을 한국어로 간결히 써주세요.
+        각 항목은 번호를 붙이고 <br>로 줄바꿈해주세요.
+        영어, 한자, 이상한 문자 없이 자연스러운 한국어로만 출력하세요.
+        """
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}"
+        }
+
+        payload = {
+            "model": "llama3-8b-8192",
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2
+        }
+
+        response = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {GROQ_API_KEY}"
-            },
-            json={
-                "model": "llama3-8b-8192",
-                "messages": [{"role": "user", "content": prompt}],
-                "temperature": 0.7,
-            },
+            headers=headers,
+            json=payload,
             timeout=10
         )
 
-        resp = r.json()
-        return resp["choices"][0]["message"]["content"]
+        if response.status_code != 200:
+            print("LLM status error:", response.text)
+            return fallback
+
+        data = response.json()
+        content = data["choices"][0]["message"]["content"].strip()
+
+        if not content:
+            return fallback
+
+        # HTML safe 처리
+        content = content.replace("\n", "<br>")
+
+        return content
 
     except Exception as e:
-        # 절대 JSON을 깨지 않음
-        return "건강을 위해 규칙적인 운동, 절주, 금연, 충분한 수면을 유지해보세요."
-
+        print("LLM ERROR:", e)
+        return fallback
 
 @app.route("/")
 def home():
