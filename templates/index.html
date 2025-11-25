@@ -9,41 +9,56 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
     <style>
-        body {margin:0;background:#0f0f23;color:white;font-family:'Noto Sans KR',sans-serif;overflow-x:hidden}
-        .hero{
-            min-height:100vh;background:linear-gradient(135deg,#0f0f23 0%,#1a1a3a 50%,#2d1b69 100%);
-            display:flex;align-items:center;justify-content:center;position:relative;text-align:center;
+        body { margin:0; background:#0f0f23; color:white; font-family:'Noto Sans KR',sans-serif; overflow-x:hidden }
+        .hero {
+            min-height:100vh;
+            background:linear-gradient(135deg,#0f0f23 0%,#1a1a3a 50%,#2d1b69 100%);
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            position:relative; text-align:center;
         }
-        .hero::before{
-            content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+        .hero::before {
+            content:''; position:absolute; inset:0;
             background:url('https://images.unsplash.com/photo-1638207213803-3c093c7cd506?auto=format') center/cover;
             opacity:0.15;
         }
-        .hero-content{position:relative;z-index:2;max-width:900px;padding:0 20px}
-        .title{font-size:clamp(4rem,10vw,7rem);font-weight:900;letter-spacing:-3px;margin:0 0 1.5rem;line-height:0.9}
+        .hero-content { z-index:2; max-width:900px; padding:0 20px }
+        .title { font-size:clamp(4rem,10vw,7rem); font-weight:900; letter-spacing:-3px; margin-bottom:1rem }
         .stroke{background:linear-gradient(90deg,#ff6b6b,#feca57);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
         .guard{color:#a29bfe;text-shadow:0 0 30px rgba(162,155,254,0.6)}
-        .subtitle{font-size:1.5rem;font-weight:300;margin-bottom:3rem;opacity:0.9}
-        .badge-box{display:flex;flex-wrap:wrap;gap:14px;justify-content:center;margin-bottom:3rem}
+        .subtitle{font-size:1.5rem;font-weight:300;margin-bottom:2rem;opacity:0.9}
+        .badge-box{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:2rem}
         .badge{background:rgba(255,255,255,0.12);padding:10px 24px;border-radius:50px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(10px)}
-        .tagline{font-size:1.6rem;font-weight:400;margin-bottom:2rem}
-        .btn-start{
-            background:#6c5ce7;color:white;border-radius:40px;padding:15px 45px;font-size:1.5rem;border:none;
+        .btn-start {
+            background:#6c5ce7; border:none; padding:15px 45px;
+            border-radius:40px; font-size:1.5rem; color:white;
         }
 
-        .card{background:white;color:#333;border-radius:28px;padding:35px}
-        .btn-opt{width:48%;padding:20px;font-size:1.3rem;border-radius:18px;border:3px solid #6c5ce7;color:#6c5ce7;background:white}
+        .container-box { max-width:700px; margin:40px auto; background:white; color:#333;
+            padding:40px; border-radius:25px; display:none }
+        .step-box{display:none}
+        .step-box.active{display:block}
+        .btn-opt{
+            width:48%; padding:18px; border-radius:18px;
+            border:3px solid #6c5ce7; background:white;
+            color:#6c5ce7; font-weight:600
+        }
         .btn-opt.active,.btn-opt:hover{background:#6c5ce7;color:white}
+
+        #loading-screen{
+            position:fixed; inset:0; background:#0f0f23;
+            display:none; align-items:center; justify-content:center; flex-direction:column;
+            z-index:999; color:white
+        }
     </style>
 </head>
 
 <body>
 
-<!-- ★ 표지 화면 -->
+<!-- 표지 -->
 <div class="hero" id="hero">
     <div class="hero-content">
         <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
-
         <p class="subtitle">국내 500만 명 + 미국 라벨링 데이터 기반<br>차세대 뇌졸중 예측 AI</p>
 
         <div class="badge-box">
@@ -52,168 +67,136 @@
             <span class="badge">실시간 AI 주치의</span>
         </div>
 
-        <p class="tagline">🧠 작은 변화가 큰 미래를 만듭니다</p>
-
-        <button class="btn-start" id="startBtn">시작하기</button>
+        <button class="btn-start" onclick="startSurvey()">시작하기</button>
     </div>
 </div>
 
+<!-- 설문 -->
+<div class="container-box" id="survey">
 
-<!-- ★ 설문 -->
-<div class="container my-5 d-none" id="survey">
-    <div class="row justify-content-center">
-        <div class="col-lg-9">
-            <div class="card">
-
-                <div class="progress mb-4">
-                    <div class="progress-bar" id="prog"></div>
-                </div>
-
-                <h2 class="text-center mb-4" id="question">1/8 성별을 선택해주세요</h2>
-
-                <div id="step1" class="text-center">
-                    <button class="btn-opt active" data-value="1">남성</button>
-                    <button class="btn-opt" data-value="2">여성</button>
-                </div>
-
-                <div id="step2" class="d-none text-center"><input id="age" type="number" class="form-control form-control-lg text-center" placeholder="나이"></div>
-                <div id="step3" class="d-none text-center"><input id="bmi" type="number" step="0.1" class="form-control form-control-lg text-center" placeholder="BMI"></div>
-                <div id="step4" class="d-none text-center"><input id="sbp" type="number" class="form-control form-control-lg text-center" placeholder="수축기 혈압"></div>
-                <div id="step5" class="d-none text-center"><input id="dbp" type="number" class="form-control form-control-lg text-center" placeholder="이완기 혈압"></div>
-                <div id="step6" class="d-none text-center"><input id="glucose" type="number" class="form-control form-control-lg text-center" placeholder="공복 혈당"></div>
-
-                <div id="step7" class="d-none text-center">
-                    <button class="btn-opt active" data-value="0">흡연 안함</button>
-                    <button class="btn-opt" data-value="1">흡연함</button>
-                </div>
-
-                <div id="step8" class="d-none text-center">
-                    <p class="fs-4 fw-bold mb-4">음주 여부를 선택해주세요</p>
-                    <p class="fs-6 text-muted mb-3">(※ 일주일에 1회 이상 음주 시 ‘음주함’으로 선택해주세요)</p>
-
-                    <button class="btn-opt active" data-value="0">음주 안함</button>
-                    <button class="btn-opt" data-value="1">음주함</button>
-                </div>
-
-                <div class="text-center mt-4">
-                    <button id="prev" class="btn btn-outline-secondary me-2 d-none">이전</button>
-                    <button id="next" class="btn btn-primary">다음</button>
-                    <button id="submit" class="btn btn-danger d-none">예측하기</button>
-                </div>
-
-            </div>
-        </div>
+    <div class="progress mb-4">
+        <div class="progress-bar" id="prog" style="width:12.5%"></div>
     </div>
+
+    <h3 id="question" class="text-center mb-4">1/8 성별을 선택해주세요</h3>
+
+    <div id="step1" class="step-box active text-center">
+        <button class="btn-opt active" data-value="1">남성</button>
+        <button class="btn-opt" data-value="2">여성</button>
+    </div>
+
+    <div id="step2" class="step-box"><input id="age" type="number" class="form-control form-control-lg text-center" placeholder="나이"></div>
+    <div id="step3" class="step-box"><input id="bmi" type="number" step="0.1" class="form-control form-control-lg text-center" placeholder="BMI"></div>
+    <div id="step4" class="step-box"><input id="sbp" type="number" class="form-control form-control-lg text-center" placeholder="수축기 혈압"></div>
+    <div id="step5" class="step-box"><input id="dbp" type="number" class="form-control form-control-lg text-center" placeholder="이완기 혈압"></div>
+    <div id="step6" class="step-box"><input id="glucose" type="number" step="0.1" class="form-control form-control-lg text-center" placeholder="공복 혈당"></div>
+
+    <div id="step7" class="step-box text-center">
+        <button class="btn-opt active" data-value="0">흡연 안함</button>
+        <button class="btn-opt" data-value="1">흡연함</button>
+    </div>
+
+    <div id="step8" class="step-box text-center">
+        <button class="btn-opt active" data-value="0">음주 안함</button>
+        <button class="btn-opt" data-value="1">음주함</button>
+    </div>
+
+    <div class="text-center mt-4">
+        <button id="prev" class="btn btn-outline-secondary me-3 d-none">이전</button>
+        <button id="next" class="btn btn-primary">다음</button>
+        <button id="submit" class="btn btn-danger d-none">예측하기</button>
+    </div>
+
 </div>
 
+<!-- 로딩 -->
+<div id="loading-screen">
+    <h2 class="mb-4">AI가 분석 중입니다...</h2>
+    <div class="spinner-border text-light" style="width:5rem;height:5rem"></div>
+</div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+function startSurvey(){
+    document.getElementById("hero").style.display = "none";
+    document.getElementById("survey").style.display = "block";
+}
 
-    // ★ 시작 버튼
-    document.getElementById("startBtn").onclick = () => {
-        document.getElementById("hero").classList.add("d-none");
-        document.getElementById("survey").classList.remove("d-none");
-        window.scrollTo({top:0, behavior:'smooth'});
-    };
+let step = 1;
+const data = {gender:1, smoking:0, drinking:0};
+const questions = [
+    "성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요",
+    "수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요",
+    "공복 혈당을 입력해주세요","흡연 여부를 선택해주세요","음주 여부를 선택해주세요"
+];
 
-    let step = 1;
-    const data = {gender:1, smoking:0, drinking:0};
+function showStep(){
+    document.querySelectorAll(".step-box").forEach(s=>s.classList.remove("active"));
+    document.getElementById("step"+step).classList.add("active");
+    document.getElementById("question").innerText = `${step}/8 ${questions[step-1]}`;
+    document.getElementById("prog").style.width = (step/8*100)+"%";
+}
 
-    document.querySelectorAll(".btn-opt").forEach(btn=>{
-        btn.onclick = function(){
-            this.parentNode.querySelectorAll(".btn-opt").forEach(x=>x.classList.remove("active"));
-            this.classList.add("active");
-        };
-    });
+document.querySelectorAll(".btn-opt").forEach(btn=>{
+    btn.onclick=function(){
+        this.parentNode.querySelectorAll(".btn-opt").forEach(x=>x.classList.remove("active"));
+        this.classList.add("active");
+    }
+});
 
-    // ★ 다음 버튼
-    document.getElementById("next").onclick = () => {
+document.getElementById("next").onclick = ()=>{
+    if(step === 1) data.gender = document.querySelector("#step1 .active").dataset.value;
+    if(step >= 2 && step <= 6){
+        const key = ["","age","bmi","sbp","dbp","glucose"][step];
+        const v = document.getElementById(key).value.trim();
+        if(!v){ alert("값을 입력해주세요"); return; }
+        data[key] = v;
+    }
+    if(step === 7) data.smoking = document.querySelector("#step7 .active").dataset.value;
+    if(step === 8) data.drinking = document.querySelector("#step8 .active").dataset.value;
 
-        if(step === 1) data.gender = document.querySelector("#step1 .active").dataset.value;
-        if(step === 7) data.smoking = document.querySelector("#step7 .active").dataset.value;
-        if(step === 8) data.drinking = document.querySelector("#step8 .active").dataset.value;
-
-        if(step >= 2 && step <= 6){
-            const ids = ["","age","bmi","sbp","dbp","glucose"];
-            const v = document.getElementById(ids[step-1]).value.trim();
-            if(!v){ alert("정확히 입력해주세요."); return; }
-            data[ids[step-1]] = v;
-        }
-
-        document.getElementById("step"+step).classList.add("d-none");
-        step++;
-        document.getElementById("step"+step).classList.remove("d-none");
-
+    if(step < 8){
+        step++; showStep();
         document.getElementById("prev").classList.remove("d-none");
-
-        document.getElementById("question").innerText =
-            `${step}/8 ` + 
-            ["성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요","수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요","공복 혈당을 입력해주세요","흡연 여부를 선택해주세요","음주 여부를 선택해주세요"][step-1];
-
-        document.getElementById("prog").style.width = (step/8*100)+"%";
-
         if(step === 8){
             document.getElementById("next").classList.add("d-none");
             document.getElementById("submit").classList.remove("d-none");
         }
-    };
+    }
+};
 
-    // ★ 이전 버튼
-    document.getElementById("prev").onclick = () => {
-        document.getElementById("step"+step).classList.add("d-none");
-        step--;
-        document.getElementById("step"+step).classList.remove("d-none");
-
-        if(step === 1) document.getElementById("prev").classList.add("d-none");
-
-        document.getElementById("submit").classList.add("d-none");
+document.getElementById("prev").onclick = ()=>{
+    if(step > 1){
+        step--; showStep();
         document.getElementById("next").classList.remove("d-none");
+        document.getElementById("submit").classList.add("d-none");
+        if(step === 1){ document.getElementById("prev").classList.add("d-none"); }
+    }
+};
 
-        document.getElementById("question").innerText =
-            `${step}/8 ` + 
-            ["성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요","수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요","공복 혈당을 입력해주세요","흡연 여부를 선택해주세요","음주 여부를 선택해주세요"][step-1];
+document.getElementById("submit").onclick = ()=>{
 
-        document.getElementById("prog").style.width = (step/8*100)+"%";
-    };
+    // 로딩화면 표시
+    document.getElementById("loading-screen").style.display = "flex";
 
-    // ★ 제출 버튼
-    document.getElementById("submit").onclick = () => {
-
-        const req = ["age","bmi","sbp","dbp","glucose"];
-        for(const k of req){
-            const v = document.getElementById(k).value.trim();
-            if(!v){ alert("정확한 값을 입력해주세요."); return; }
-            data[k] = v;
-        }
-
-        // 로딩 화면
-        document.getElementById("survey").innerHTML = `
-            <div style="height:70vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                <h2 class="mb-4">AI가 예측 중입니다...</h2>
-                <div class="spinner-border text-light" style="width:5rem;height:5rem;border-width:6px;"></div>
-            </div>
-        `;
-
-        fetch("/predict", {
-
-
-            method:"POST",
-            headers:{"Content-Type":"application/x-www-form-urlencoded"},
-            body:new URLSearchParams(data)
-        })
-        .then(r=>r.text())
-        .then(html=>document.body.innerHTML = html)
-        .catch(()=>{
-            document.body.innerHTML = `
-                <div class="text-center py-5">
-                    <h1>오류가 발생했습니다</h1>
-                    <button class="btn btn-primary btn-lg" onclick="location.reload()">다시 시도</button>
-                </div>
-            `;
-        });
-    };
-});
+    // -------------------------
+    // ※ 핵심: /predict 로 POST!!
+    // -------------------------
+    fetch("/predict", {
+        method:"POST",
+        headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+        body:new URLSearchParams(data)
+    })
+    .then(r => r.text())
+    .then(html => {
+        document.open();
+        document.write(html);
+        document.close();
+    })
+    .catch(()=>{
+        alert("오류가 발생했습니다.");
+        location.reload();
+    });
+};
 </script>
 
 </body>
