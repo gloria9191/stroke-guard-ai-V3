@@ -1,62 +1,84 @@
-from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, jsonify
 import joblib
 import numpy as np
-import os
 import requests
+import os
 
 app = Flask(__name__)
 
+# 모델 로드
 model = joblib.load("stroke_model.pkl")
-THRESHOLD = 0.029698
+
+THRESHOLD = 0.03
+
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def generate_advice(prob):
     if not GROQ_API_KEY:
-        return "AI 코멘트를 불러올 수 없습니다."
+        return "AI 조언 기능을 사용할 수 없습니다."
 
     prompt = f"""
-    사용자의 뇌졸중 발병 확률이 {prob}%로 계산되었습니다.
-    식습관, 운동, 위험요인 관리 등 구체적 조언을 4~5줄로 작성해주세요.
+    사용자의 뇌졸중 발병 확률은 {prob}% 입니다.
+    생활습관, 운동, 식단 개선 등을 포함한 구체적인 조언을 5줄 작성해주세요.
     """
 
     try:
         r = requests.post(
             "https://api.groq.com/openai/v1/chat/completions",
             headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
-            json={"model":"llama3-8b-8192", "messages":[{"role":"user","content":prompt}]}
+            json={
+                "model": "llama3-8b-8192",
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ]
+            }
         )
-        return r.json()["choices"][0]["message"]["content"]
+
+        data = r.json()
+        return data["choices"][0]["message"]["content"]
+
     except:
-        return "생활습관 개선이 중요합니다. 혈압/혈당/흡연 여부를 관리하시기 바랍니다."
+        return "AI 조언 생성 중 오류가 발생했습니다."
+
+
+@app.route("/")
+def index():
+    return render_template("index.html")
+
 
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
-        gender = float(request.form.get("gender", 1))
-        age = float(request.form.get("age", 60))
-        bmi = float(request.form.get("bmi", 23))
-        sbp = float(request.form.get("sbp", 120))
-        dbp = float(request.form.get("dbp", 80))
-        glucose = float(request.form.get("glucose", 90))
-        smoking = float(request.form.get("smoking", 0))
-        drinking = float(request.form.get("drinking", 0))
+        gender   = float(request.form.get("gender"))
+        age      = float(request.form.get("age"))
+        bmi      = float(request.form.get("bmi"))
+        sbp      = float(request.form.get("sbp"))
+        dbp      = float(request.form.get("dbp"))
+        glucose  = float(request.form.get("glucose"))
+        smoking  = float(request.form.get("smoking"))
+        drinking = float(request.form.get("drinking"))
 
-        x = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
-        prob = model.predict_proba(x)[0][1]
+        X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
+        prob = float(model.predict_proba(X)[0][1])
 
         prob_percent = round(prob * 100, 2)
 
         risk_class = "high" if prob > THRESHOLD else "low"
-        risk_text = "고위험" if prob > THRESHOLD else "저위험"
+        risk_text  = "고위험" if prob > THRESHOLD else "저위험"
 
         advice = generate_advice(prob_percent)
 
-        return jsonify({
-            "prob": prob_percent,
-            "risk_text": risk_text,
-            "risk_class": risk_class,
-            "advice": advice
-        })
+        return render_template(
+            "result.html",
+            prob=prob_percent,
+            risk_class=risk_class,
+            risk_text=risk_text,
+            advice=advice
+        )
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return f"오류 발생: {str(e)}"
+
+
+if __name__ == "__main__":
+    app.run()
