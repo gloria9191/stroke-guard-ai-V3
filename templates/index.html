@@ -215,21 +215,31 @@ document.getElementById("submit").onclick = () => {
             <p class="mt-4 fs-3 text-muted">잠시만 기다려주세요</p>
         </div>`;
 
-    fetch("/", {
-        method:"POST",
-        headers:{"Content-Type":"application/x-www-form-urlencoded"},
-        body:new URLSearchParams(data)
+    fetch("/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
     })
-    .then(r => r.text())
-    .then(html => document.body.innerHTML = html)
-    .catch(() => {
-        document.body.innerHTML =
-            `<div class="text-center py-5">
-                <h1>일시적인 오류가 발생했습니다</h1>
-                <button class="btn btn-primary btn-lg" onclick="location.reload()">다시 시도</button>
-            </div>`;
-    });
-};
+    .then(r => r.json())
+    .then(res => {
+    if(res.error){
+        document.getElementById("resultCard").innerHTML = `
+            <h1>오류 발생</h1><p>${res.error}</p>
+        `;
+        return;
+    }
+
+    document.getElementById("resultCard").className =
+        "card p-5 text-white text-center " + res.risk_class;
+
+    document.getElementById("resultCard").innerHTML = `
+        <h1 class="display-1 fw-bold mb-3">${res.prob}%</h1>
+        <h2 class="display-5 mb-5">${res.risk_text}군</h2>
+        <div class="mt-5 fs-3 lh-lg px-4">${res.advice}</div>
+        <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
+    `;
+});
+
 </script>
 
 </body>
