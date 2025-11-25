@@ -39,7 +39,7 @@
 
 <body>
 
-<!-- ★ 표지 화면 그대로 유지 -->
+<!-- ★ 표지 화면 -->
 <div class="hero" id="hero">
     <div class="hero-content">
         <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
@@ -54,20 +54,19 @@
 
         <p class="tagline">🧠 작은 변화가 큰 미래를 만듭니다</p>
 
-        <!-- ★ 추가된 시작 버튼 -->
-        <button class="btn-start" onclick="startSurvey()">시작하기</button>
+        <button class="btn-start" id="startBtn">시작하기</button>
     </div>
 </div>
 
 
-<!-- ★ 설문은 처음엔 숨김 -->
+<!-- ★ 설문 -->
 <div class="container my-5 d-none" id="survey">
     <div class="row justify-content-center">
         <div class="col-lg-9">
             <div class="card">
 
                 <div class="progress mb-4">
-                    <div class="progress-bar" id="prog" style="width:12.5%"></div>
+                    <div class="progress-bar" id="prog"></div>
                 </div>
 
                 <h2 class="text-center mb-4" id="question">1/8 성별을 선택해주세요</h2>
@@ -96,7 +95,6 @@
                     <button class="btn-opt" data-value="1">음주함</button>
                 </div>
 
-
                 <div class="text-center mt-4">
                     <button id="prev" class="btn btn-outline-secondary me-2 d-none">이전</button>
                     <button id="next" class="btn btn-primary">다음</button>
@@ -109,126 +107,111 @@
 </div>
 
 
-
 <script>
-// ★ 표지 → 설문 전환
-function startSurvey(){
-    document.getElementById("hero").classList.add("d-none");
-    document.getElementById("survey").classList.remove("d-none");
-    window.scrollTo({top:0, behavior:'smooth'});
-}
+document.addEventListener("DOMContentLoaded", () => {
 
-let step = 1;
-const data = {gender:1, smoking:0, drinking:0};
-
-document.querySelectorAll(".btn-opt").forEach(b=>{
-    b.onclick = function(){
-        this.parentNode.querySelectorAll(".btn-opt").forEach(x=>x.classList.remove("active"));
-        this.classList.add("active");
+    // ★ 시작 버튼
+    document.getElementById("startBtn").onclick = () => {
+        document.getElementById("hero").classList.add("d-none");
+        document.getElementById("survey").classList.remove("d-none");
+        window.scrollTo({top:0, behavior:'smooth'});
     };
-});
 
-// ★ 다음 버튼
-document.getElementById("next").onclick = () => {
-    if(step===1) data.gender = document.querySelector("#step1 .active").dataset.value;
-    if(step===7) data.smoking = document.querySelector("#step7 .active").dataset.value;
-    if(step===8) data.drinking = document.querySelector("#step8 .active").dataset.value;
+    let step = 1;
+    const data = {gender:1, smoking:0, drinking:0};
 
-    if(step>=2 && step<=6){
-        const ids = ["","age","bmi","sbp","dbp","glucose"];
-        const v = document.getElementById(ids[step-1]).value.trim();
-        if(!v || isNaN(v)){ alert("정확히 입력해주세요"); return; }
-        data[ids[step-1]] = v;
-    }
+    document.querySelectorAll(".btn-opt").forEach(btn=>{
+        btn.onclick = function(){
+            this.parentNode.querySelectorAll(".btn-opt").forEach(x=>x.classList.remove("active"));
+            this.classList.add("active");
+        };
+    });
 
-    document.getElementById("step"+step).classList.add("d-none");
-    step++;
-    document.getElementById("step"+step).classList.remove("d-none");
+    // ★ 다음 버튼
+    document.getElementById("next").onclick = () => {
 
-    document.getElementById("question").innerText = `${step}/8`;
-    document.getElementById("prog").style.width = (step/8*100)+"%";
+        if(step === 1) data.gender = document.querySelector("#step1 .active").dataset.value;
+        if(step === 7) data.smoking = document.querySelector("#step7 .active").dataset.value;
+        if(step === 8) data.drinking = document.querySelector("#step8 .active").dataset.value;
 
-    document.getElementById("prev").classList.remove("d-none");
-    if(step===8){
-        document.getElementById("next").classList.add("d-none");
-        document.getElementById("submit").classList.remove("d-none");
-    }
-};
+        if(step >= 2 && step <= 6){
+            const ids = ["","age","bmi","sbp","dbp","glucose"];
+            const v = document.getElementById(ids[step-1]).value.trim();
+            if(!v){ alert("정확히 입력해주세요."); return; }
+            data[ids[step-1]] = v;
+        }
 
-// ★ 이전 버튼
-document.getElementById("prev").onclick = () => {
-    document.getElementById("step"+step).classList.add("d-none");
-    step--;
-    document.getElementById("step"+step).classList.remove("d-none");
+        document.getElementById("step"+step).classList.add("d-none");
+        step++;
+        document.getElementById("step"+step).classList.remove("d-none");
 
-    if(step===1) document.getElementById("prev").classList.add("d-none");
-    document.getElementById("submit").classList.add("d-none");
-    document.getElementById("next").classList.remove("d-none");
+        document.getElementById("prev").classList.remove("d-none");
 
-    document.getElementById("question").innerText = `${step}/8`;
-    document.getElementById("prog").style.width = (step/8*100)+"%";
-};
+        document.getElementById("question").innerText =
+            `${step}/8 ` + 
+            ["성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요","수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요","공복 혈당을 입력해주세요","흡연 여부를 선택해주세요","음주 여부를 선택해주세요"][step-1];
 
-// ★ 최종 제출 → /predict 로 POST
-document.getElementById("submit").onclick = () => {
+        document.getElementById("prog").style.width = (step/8*100)+"%";
 
-    const required = ["age","bmi","sbp","dbp","glucose"];
-    for(const k of required){
-        const v = document.getElementById(k).value.trim();
-        if(!v || isNaN(v)){ alert("정확한 값을 입력해주세요"); return; }
-        data[k] = v;
-    }
+        if(step === 8){
+            document.getElementById("next").classList.add("d-none");
+            document.getElementById("submit").classList.remove("d-none");
+        }
+    };
 
-    document.getElementById("survey").innerHTML = `
-        <div style="height:70vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-            <h2 class="mb-4">AI가 예측 중입니다...</h2>
-            <div class="spinner-border text-light" style="width:5rem;height:5rem;border-width:6px;"></div>
-        </div>
-    `;
+    // ★ 이전 버튼
+    document.getElementById("prev").onclick = () => {
+        document.getElementById("step"+step).classList.add("d-none");
+        step--;
+        document.getElementById("step"+step).classList.remove("d-none");
 
+        if(step === 1) document.getElementById("prev").classList.add("d-none");
+
+        document.getElementById("submit").classList.add("d-none");
+        document.getElementById("next").classList.remove("d-none");
+
+        document.getElementById("question").innerText =
+            `${step}/8 ` + 
+            ["성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요","수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요","공복 혈당을 입력해주세요","흡연 여부를 선택해주세요","음주 여부를 선택해주세요"][step-1];
+
+        document.getElementById("prog").style.width = (step/8*100)+"%";
+    };
+
+    // ★ 제출 버튼
     document.getElementById("submit").onclick = () => {
 
-    const required = ["age","bmi","sbp","dbp","glucose"];
-    for(const k of required){
-        const v = document.getElementById(k).value.trim();
-        if(!v || isNaN(v)){ alert("정확한 값을 입력해주세요"); return; }
-        data[k] = v;
-    }
+        const req = ["age","bmi","sbp","dbp","glucose"];
+        for(const k of req){
+            const v = document.getElementById(k).value.trim();
+            if(!v){ alert("정확한 값을 입력해주세요."); return; }
+            data[k] = v;
+        }
 
-    // 로딩 화면 표시
-    document.getElementById("survey").innerHTML = `
-        <div style="height:70vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-            <h2 class="mb-4">AI가 예측 중입니다...</h2>
-            <div class="spinner-border text-light" style="width:5rem;height:5rem;border-width:6px;"></div>
-        </div>
-    `;
-
-    // ✔ fetch 대신 HTML form으로 강제 제출
-    const form = document.createElement("form");
-    form.method = "POST";
-    form.action = "/predict";
-
-    for(const key in data){
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = key;
-        input.value = data[key];
-        form.appendChild(input);
-    }
-
-    document.body.appendChild(form);
-    form.submit();
-};
-
-    .catch(()=>{
-        document.body.innerHTML = `
-            <div class="text-center py-5">
-                <h1>오류가 발생했습니다</h1>
-                <button class="btn btn-primary btn-lg" onclick="location.reload()">다시 시도</button>
+        // 로딩 화면
+        document.getElementById("survey").innerHTML = `
+            <div style="height:70vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                <h2 class="mb-4">AI가 예측 중입니다...</h2>
+                <div class="spinner-border text-light" style="width:5rem;height:5rem;border-width:6px;"></div>
             </div>
         `;
-    });
-};
+
+        fetch("/predict", {
+            method:"POST",
+            headers:{"Content-Type":"application/x-www-form-urlencoded"},
+            body:new URLSearchParams(data)
+        })
+        .then(r=>r.text())
+        .then(html=>document.body.innerHTML = html)
+        .catch(()=>{
+            document.body.innerHTML = `
+                <div class="text-center py-5">
+                    <h1>오류가 발생했습니다</h1>
+                    <button class="btn btn-primary btn-lg" onclick="location.reload()">다시 시도</button>
+                </div>
+            `;
+        });
+    };
+});
 </script>
 
 </body>
