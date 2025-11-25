@@ -1,55 +1,58 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>StrokeGuard AI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>StrokeGuard AI</title>
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-<style>
-    body { margin:0; background:#0f0f23; color:white; font-family:'Noto Sans KR',sans-serif; overflow-x:hidden }
-    .hero {
-        min-height:100vh;
-        background:linear-gradient(135deg,#0f0f23 0%,#1a1a3a 50%,#2d1b69 100%);
-        display:flex; flex-direction:column; align-items:center; justify-content:center;
-        position:relative; text-align:center;
-    }
-    .hero::before {
-        content:''; position:absolute; inset:0;
-        background:url('https://images.unsplash.com/photo-1638207213803-3c093c7cd506?auto=format') center/cover;
-        opacity:0.15;
-    }
-    .hero-content { z-index:2; max-width:900px; padding:0 20px }
-    .title { font-size:clamp(4rem,10vw,7rem); font-weight:900; letter-spacing:-3px; margin-bottom:1rem }
-    .stroke{background:linear-gradient(90deg,#ff6b6b,#feca57);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .guard{color:#a29bfe;text-shadow:0 0 30px rgba(162,155,254,0.6)}
-    .subtitle{font-size:1.5rem;font-weight:300;margin-bottom:2rem;opacity:0.9}
-    .badge-box{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:2rem}
-    .badge{background:rgba(255,255,255,0.12);padding:10px 24px;border-radius:50px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(10px)}
-    .btn-start {
-        background:#6c5ce7; border:none; padding:15px 45px;
-        border-radius:40px; font-size:1.5rem; color:white;
-    }
+    <style>
+        body { margin:0; background:#0f0f23; color:white; font-family:'Noto Sans KR',sans-serif; overflow-x:hidden }
 
-    .container-box { max-width:700px; margin:40px auto; background:white; color:#333;
-        padding:40px; border-radius:25px; display:none }
-    .step-box{display:none}
-    .step-box.active{display:block}
-    .btn-opt{
-        width:48%; padding:18px; border-radius:18px;
-        border:3px solid #6c5ce7; background:white;
-        color:#6c5ce7; font-weight:600
-    }
-    .btn-opt.active,.btn-opt:hover{background:#6c5ce7;color:white}
+        .hero {
+            min-height:100vh;
+            background:linear-gradient(135deg,#0f0f23 0%,#1a1a3a 50%,#2d1b69 100%);
+            display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            position:relative; text-align:center;
+        }
+        .hero::before {
+            content:''; position:absolute; inset:0;
+            background:url('https://images.unsplash.com/photo-1638207213803-3c093c7cd506?auto=format') center/cover;
+            opacity:0.15;
+        }
+        .hero-content { z-index:2; max-width:900px; padding:0 20px }
+        .title { font-size:clamp(4rem,10vw,7rem); font-weight:900; letter-spacing:-3px; margin-bottom:1rem }
+        .stroke{background:linear-gradient(90deg,#ff6b6b,#feca57);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+        .guard{color:#a29bfe;text-shadow:0 0 30px rgba(162,155,254,0.6)}
+        .subtitle{font-size:1.5rem;font-weight:300;margin-bottom:2rem;opacity:0.9}
+        .badge-box{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;margin-bottom:2rem}
+        .badge{background:rgba(255,255,255,0.12);padding:10px 24px;border-radius:50px;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(10px)}
+        .btn-start {
+            background:#6c5ce7; border:none; padding:15px 45px;
+            border-radius:40px; font-size:1.5rem; color:white;
+        }
 
-    #loading-screen{
-        position:fixed; inset:0; background:#0f0f23;
-        display:none; align-items:center; justify-content:center; flex-direction:column;
-        z-index:999; color:white
-    }
-</style>
+        .container-box { max-width:700px; margin:40px auto; background:white; color:#333;
+            padding:40px; border-radius:25px; display:none }
+        .step-box{display:none}
+        .step-box.active{display:block}
+
+        .btn-opt{
+            width:48%; padding:18px; border-radius:18px;
+            border:3px solid #6c5ce7; background:white;
+            color:#6c5ce7; font-weight:600
+        }
+        .btn-opt.active,.btn-opt:hover{background:#6c5ce7;color:white}
+
+        #loading-screen{
+            position:fixed; inset:0; background:#0f0f23;
+            display:none; align-items:center; justify-content:center; flex-direction:column;
+            z-index:999; color:white
+        }
+    </style>
 </head>
 
 <body>
@@ -62,8 +65,8 @@
 
         <div class="badge-box">
             <span class="badge">ROC-AUC 0.796</span>
-            <span class="badge">뇌졸중 검출 91.5%</span>
-            <span class="badge">실시간 AI 주치의</span>
+            <span class="badge">검출률 Recall 91.5%</span>
+            <span class="badge">실시간 AI 건강 코멘트</span>
         </div>
 
         <button class="btn-start" onclick="startSurvey()">시작하기</button>
@@ -121,8 +124,7 @@ function startSurvey(){
 }
 
 let step = 1;
-const data = {gender:1, smoking:0, drinking:0};
-const fieldKeys = ["","age","bmi","sbp","dbp","glucose"];
+const data = { gender:1, smoking:0, drinking:0 };
 const questions = [
     "성별을 선택해주세요","나이를 입력해주세요","BMI를 입력해주세요",
     "수축기 혈압을 입력해주세요","이완기 혈압을 입력해주세요",
@@ -131,7 +133,7 @@ const questions = [
 
 function showStep(){
     document.querySelectorAll(".step-box").forEach(s=>s.classList.remove("active"));
-    document.getElementById("step"+step).classList.add("active");
+    document.getElementById(`step${step}`).classList.add("active");
     document.getElementById("question").innerText = `${step}/8 ${questions[step-1]}`;
     document.getElementById("prog").style.width = (step/8*100)+"%";
 }
@@ -144,16 +146,25 @@ document.querySelectorAll(".btn-opt").forEach(btn=>{
 });
 
 document.getElementById("next").onclick = ()=>{
-    if(step === 1){
+    if(step === 1) {
         data.gender = document.querySelector("#step1 .active").dataset.value;
-    } else if(step >= 2 && step <= 6){
-        const key = fieldKeys[step];
-        const v = document.getElementById(key).value.trim();
-        if(!v){ alert("값을 입력해주세요"); return; }
-        data[key] = v;
-    } else if(step === 7){
-        data.smoking = document.querySelector("#step7 .active").dataset.value;
     }
+
+    if(step >= 2 && step <= 6){
+        const mapping = {2:"age", 3:"bmi", 4:"sbp", 5:"dbp", 6:"glucose"};
+        const key = mapping[step];
+
+        const v = document.getElementById(key).value?.trim();
+        if(!v){
+            alert("값을 입력해주세요");
+            return;
+        }
+
+        data[key] = parseFloat(v);
+    }
+
+    if(step === 7) data.smoking = document.querySelector("#step7 .active").dataset.value;
+    if(step === 8) data.drinking = document.querySelector("#step8 .active").dataset.value;
 
     if(step < 8){
         step++; showStep();
@@ -170,12 +181,11 @@ document.getElementById("prev").onclick = ()=>{
         step--; showStep();
         document.getElementById("next").classList.remove("d-none");
         document.getElementById("submit").classList.add("d-none");
-        if(step === 1){ document.getElementById("prev").classList.add("d-none"); }
+        if(step === 1) document.getElementById("prev").classList.add("d-none");
     }
 };
 
 document.getElementById("submit").onclick = ()=>{
-
     document.getElementById("loading-screen").style.display = "flex";
 
     const form = document.createElement("form");
