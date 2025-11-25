@@ -74,9 +74,35 @@ def generate_advice(prob):
         print("LLM ERROR:", e)
         return fallback
 
-@app.route("/")
-def home():
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        # 이 데이터를 predict로 넘기지 않고 index에서 처리하니까
+        # 바로 result.html 렌더링해줘야 함
+        data = request.form.to_dict()
+
+        # BMI가 정상적으로 들어왔는지 확인
+        # 문자열 -> float 변환
+        for k in data:
+            try:
+                data[k] = float(data[k])
+            except:
+                pass
+
+        # 모델 예측 (LLM 부분은 아래 predict 로직 그대로 복사하면 됨)
+        prob, risk_text, risk_class = model_predict(data)
+
+        # LLM 조언 생성
+        advice = generate_advice(prob)
+
+        return render_template("result.html",
+                               prob=prob,
+                               risk_text=risk_text,
+                               risk_class=risk_class,
+                               advice=advice)
+
     return render_template("index.html")
+
 
 @app.route("/predict", methods=["POST"])
 def predict():
