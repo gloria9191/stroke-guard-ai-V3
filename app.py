@@ -9,14 +9,11 @@ app = Flask(__name__)
 # ----------------------------
 # 1) 모델 로드
 # ----------------------------
-print("🔄 Loading stroke_model.pkl ...")
 model = joblib.load("stroke_model.pkl")
-print("✅ 모델 로드 완료")
-
-THRESHOLD = 0.029698   # recall 0.915 달성했던 threshold
+THRESHOLD = 0.029698   # recall 0.915 달성 threshold
 
 # ----------------------------
-# 2) GROQ LLM (선택)
+# 2) GROQ LLM
 # ----------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
@@ -51,7 +48,7 @@ def generate_advice(prob):
 # ----------------------------
 @app.route("/")
 def index():
-    return render_template("index.html", show_result=False)
+    return render_template("index.html")
 
 
 @app.route("/predict", methods=["POST"])
@@ -65,7 +62,6 @@ def predict():
         glucose  = float(request.form.get("glucose"))
         smoking  = float(request.form.get("smoking"))
         drinking = float(request.form.get("drinking"))
-
     except Exception as e:
         return f"입력 오류 발생: {e}"
 
@@ -74,19 +70,17 @@ def predict():
     prob = model.predict_proba(X)[0][1]
     prob_percent = round(prob * 100, 2)
 
-    # 위험도 등급 분류
     if prob >= THRESHOLD:
-        risk_class = "result-high"
+        risk_class = "high"
         risk_text = "고위험"
     else:
-        risk_class = "result-low"
+        risk_class = "low"
         risk_text = "저위험"
 
     advice = generate_advice(prob_percent)
 
     return render_template(
-        "index.html",
-        show_result=True,
+        "result.html",
         prob=prob_percent,
         risk_class=risk_class,
         risk_text=risk_text,
