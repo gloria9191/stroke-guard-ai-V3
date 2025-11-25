@@ -35,8 +35,13 @@ def index():
 
 
 # ★★★★★ Method Not Allowed 해결 핵심 ★★★★★
-@app.route("/predict", methods=["POST"])
+@app.route("/predict", methods=["GET", "POST"])
 def predict():
+
+    # GET 요청 → 설문 화면으로 보내기 (오류 방지)
+    if request.method == "GET":
+        return render_template("index.html")
+
     try:
         gender   = float(request.form.get("gender"))
         age      = float(request.form.get("age"))
