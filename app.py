@@ -22,35 +22,50 @@ THRESHOLD = 0.029698
 # ----------------------------
 # 2) GROQ LLM
 # ----------------------------
+# ----------------------------
+# 2) GROQ LLM
+# ----------------------------
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 def generate_advice(prob):
     if not GROQ_API_KEY:
-        return "AI 조언을 불러올 수 없습니다."
-
-    prompt = f"""
-    사용자의 뇌졸중 발병 확률은 {prob}% 입니다.
-    건강 관리, 생활습관, 운동, 식습관, 주의할 점을
-    5줄 이내의 한국어로 자연스럽게 조언해 주세요.
-    """
+        return "⚠️ AI 코멘트를 불러올 수 없습니다."
 
     try:
-        r = requests.post(
-            "https://api.groq.com/openai/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {GROQ_API_KEY}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "model": "mixtral-8x7b-32768",
-                "messages": [{"role": "user", "content": prompt}]
-            },
-            timeout=15
-        )
-        data = r.json()
-        return data["choices"][0]["message"]["content"]
-    except:
-        return "AI 조언 생성 중 오류가 발생했습니다."
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {GROQ_API_KEY}"
+        }
+
+        prompt = f"""
+        사용자의 뇌졸중 발병 확률은 {prob}%입니다.
+        한국인 생활습관 기준으로,
+        나트륨, 운동, 금연, 혈압·혈당관리 등을 포함해
+        5줄 이내의 고급 건강 조언을 한국어로 제공하세요.
+        절대로 영어·기호·한자 섞어서 쓰지 말고 자연스럽게 한국어로만 작성하세요.
+        """
+
+        data = {
+            "model": "llama3-8b-8192",    # 🔥 현재 Groq에서 가장 안정적으로 지원되는 모델
+            "messages": [
+                {"role": "system", "content": "당신은 전문 의료 상담가입니다."},
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 200,
+            "temperature": 0.6
+        }
+
+        res = requests.post(url, headers=headers, json=data)
+        
+        if res.status_code != 200:
+            return "⚠️ AI 조언 생성 중 오류가 발생했습니다."
+
+        out = res.json()
+        return out["choices"][0]["message"]["content"].strip()
+
+    except Exception as e:
+        return "⚠️ AI 조언 생성 중 오류가 발생했습니다."
 
 
 # ----------------------------
