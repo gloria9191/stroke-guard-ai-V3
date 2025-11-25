@@ -47,7 +47,7 @@
         <h1 class="title"><span class="stroke">Stroke</span><span class="guard">Guard</span> AI</h1>
         <p class="subtitle">국내 500만 명 + 미국 라벨링 데이터로 학습한<br>차세대 뇌졸중 예측 AI</p>
         <div class="badges">
-            <span class="badge">ROC-AUC 0.796</span>
+            <span class="badge">임상 수준의 예측 안정성</span>
             <span class="badge">뇌졸중 검출 91.5%</span>
             <span class="badge">실시간 AI 주치의</span>
         </div>
