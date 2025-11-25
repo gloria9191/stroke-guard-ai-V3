@@ -20,56 +20,53 @@ def generate_advice(prob):
             headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
             json={
                 "model": "llama3-8b-8192",
-                "messages":[{"role":"user","content":f"뇌졸중 발병 확률 {prob}%일 때 조언 5줄"}],
-                "max_tokens":200
+                "messages": [{"role": "user", "content": f"뇌졸중 발병 확률 {prob}%일 때 조언 5줄"}],
+                "max_tokens": 150
             }
         )
         return r.json()["choices"][0]["message"]["content"]
     except:
-        return "⚠️ AI 조언 생성 오류"
-
+        return "⚠️ AI 조언 생성 실패"
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
-# ★★★★★ Method Not Allowed 해결 핵심 ★★★★★
-@app.route("/predict", methods=["GET", "POST"])
+@app.route("/predict", methods=["POST"])
 def predict():
 
-    # GET 요청 → 설문 화면으로 보내기 (오류 방지)
-    if request.method == "GET":
-        return render_template("index.html")
-    print("🟢 RECEIVED FORM:", request.form)
+    print("📌 FORM DATA:", dict(request.form))
+
+    def safe_float(v):
+        try:
+            return float(v)
+        except:
+            return 0.0
+
+    gender   = safe_float(request.form.get("gender"))
+    age      = safe_float(request.form.get("age"))
+    bmi      = safe_float(request.form.get("bmi"))
+    sbp      = safe_float(request.form.get("sbp"))
+    dbp      = safe_float(request.form.get("dbp"))
+    glucose  = safe_float(request.form.get("glucose"))
+    smoking  = safe_float(request.form.get("smoking"))
+    drinking = safe_float(request.form.get("drinking"))
+
     try:
-        gender   = float(request.form.get("gender"))
-        age      = float(request.form.get("age"))
-        bmi      = float(request.form.get("bmi"))
-        sbp      = float(request.form.get("sbp"))
-        dbp      = float(request.form.get("dbp"))
-        glucose  = float(request.form.get("glucose"))
-        smoking  = float(request.form.get("smoking"))
-        drinking = float(request.form.get("drinking"))
+        X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
+        prob = model.predict_proba(X)[0][1]
     except Exception as e:
-        return f"입력 오류: {e}"
+        return f"<h1>⚠️ 예측 오류: {e}</h1>"
 
-    X = np.array([[gender, age, bmi, sbp, dbp, glucose, smoking, drinking]])
-    prob = model.predict_proba(X)[0][1]
     prob_percent = round(prob * 100, 2)
-
+    risk_text = "고위험" if prob >= THRESHOLD else "저위험"
     risk_class = "high" if prob >= THRESHOLD else "low"
-    risk_text  = "고위험" if prob >= THRESHOLD else "저위험"
-
     advice = generate_advice(prob_percent)
 
     return render_template(
         "result.html",
         prob=prob_percent,
-        risk_class=risk_class,
         risk_text=risk_text,
+        risk_class=risk_class,
         advice=advice
     )
-
-
-
