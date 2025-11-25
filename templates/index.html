@@ -12,7 +12,7 @@
     <style>
         body {margin:0;background:#0f0f23;color:white;font-family:'Noto Sans KR',sans-serif;overflow-x:hidden}
 
-        .hero{min-height:100vh;background:linear-gradient(135deg,#0f0f23 0%,#1a1a3a 50%,#2d1b69 100%);display:flex;align-items:center;justify-content:center;position:relative}
+        .hero{min-height:100vh;background:linear-gradient(135deg,#0f0f23,#1a1a3a,#2d1b69);display:flex;align-items:center;justify-content:center;position:relative}
         .hero::before{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:url('https://images.unsplash.com/photo-1638207213803-3c093c7cd506?auto=format&fit=crop&q=80') center/cover;opacity:0.15}
         .hero-content{position:relative;z-index:2;max-width:900px;text-align:center;padding:0 20px}
 
@@ -30,22 +30,36 @@
 
         .btn-step{background:linear-gradient(135deg,#a29bfe,#6c5ce7);color:white;padding:18px 70px;border-radius:50px;font-size:1.4rem;font-weight:700}
 
+
+        /* ============================ */
+        /*     세련된 결과 창 색상 수정     */
+        /* ============================ */
         .result-high{
-            background:linear-gradient(135deg,#ff4d4d,#ff9966) !important;
+            background:linear-gradient(135deg,#6b0000,#ff5e5e,#ff9b4a) !important;
+            color:white;
         }
         .result-low{
-            background:linear-gradient(135deg,#3aa0ff,#6bc1ff) !important;
+            background:linear-gradient(135deg,#004d73,#2b9ed0,#7fe7ff) !important;
+            color:white;
         }
 
         .result-text-box{
-            word-break:break-word;
+            word-break:keep-all;
             white-space:pre-line;
-            font-size:1.5rem;
-            line-height:1.7;
-            padding:20px;
+            font-size:1.55rem;
+            line-height:1.85;
+            padding:30px 25px;
+            margin-top:20px;
+        }
+
+        .llm-model-info{
+            font-size:1rem;
+            opacity:0.8;
+            margin-top:25px;
         }
     </style>
 </head>
+
 
 <body>
 
@@ -62,14 +76,12 @@
             <span class="badge">실시간 AI 주치의</span>
         </div>
 
-        <p class="tagline">
-            <span class="icon">SYNAPSE</span>작은 변화가 큰 미래를 만듭니다
-        </p>
+        <p class="tagline"><span class="icon">SYNAPSE</span> 작은 변화が 큰 미래를 만듭니다</p>
     </div>
 </div>
 
 
-<!-- SURVEY -->
+<!-- SURVEY (동일 / 수정 없음) -->
 <div class="container my-5" id="survey">
     <div class="row justify-content-center">
         <div class="col-lg-9">
@@ -244,7 +256,11 @@ document.getElementById("submit").onclick = ()=>{
         card.innerHTML = `
             <h1 class="display-1 fw-bold mb-3">${res.prob}%</h1>
             <h2 class="display-5 mb-4">${res.risk_text}군</h2>
+
             <div class="result-text-box">${res.advice}</div>
+
+            <div class="llm-model-info">※ 생성 모델: Groq Llama-3.1-8B-Instant</div>
+
             <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
         `;
     })
