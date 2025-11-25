@@ -13,24 +13,31 @@ def index():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-
     try:
-        data = request.get_json(force=True)
+        print("📌 /predict called")
+        print("📌 request.json:", request.json)
+
+        data = request.json
+        if data is None:
+            print("❌ request.json is None")
+            return jsonify({"error": "No JSON received"}), 400
 
         X = np.array([
-            float(data["gender"]),
-            float(data["age"]),
-            float(data["bmi"]),
-            float(data["sbp"]),
-            float(data["dbp"]),
-            float(data["glucose"]),
-            float(data["smoking"]),
-            float(data["drinking"])
-        ]).reshape(1,-1)
+            float(data.get("gender", 0)),
+            float(data.get("age", 0)),
+            float(data.get("bmi", 0)),
+            float(data.get("sbp", 0)),
+            float(data.get("dbp", 0)),
+            float(data.get("glucose", 0)),
+            float(data.get("smoking", 0)),
+            float(data.get("drinking", 0))
+        ]).reshape(1, -1)
 
-        # 예측
+        print("📌 Input X:", X)
+
         prob = float(model.predict_proba(X)[0][1]) * 100
-        prob = round(prob,2)
+        prob = round(prob, 2)
+        print("📌 prob:", prob)
 
         if prob >= 20:
             risk_class = "result-high"
@@ -50,5 +57,5 @@ def predict():
         })
 
     except Exception as e:
-        print("❌ PREDICT ERROR:", str(e), flush=True)
+        print("🔥 ERROR in /predict:", str(e))
         return jsonify({"error": str(e)}), 500
