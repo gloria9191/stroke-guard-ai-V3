@@ -1,8 +1,6 @@
 from flask import Flask, request, jsonify, render_template
 import joblib
 import numpy as np
-import os
-import requests
 
 app = Flask(__name__)
 
@@ -15,7 +13,7 @@ def index():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    data = request.json
+    data = request.get_json(force=True)   # 🔥 핵심 수정
 
     X = np.array([
         float(data["gender"]),
@@ -31,7 +29,6 @@ def predict():
     prob = float(model.predict_proba(X)[0][1]) * 100
     prob = round(prob,2)
 
-    # 위험도 등급
     if prob >= 20:
         risk_class = "result-high"
         risk_text = "고위험"
