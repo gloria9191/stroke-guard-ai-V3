@@ -37,21 +37,21 @@
         }
 
         /* 시냅스 문구 - 캡처 디자인 재현 */
-        .tagline{
-            margin-top:40px;
-            font-size:1.2rem;
-            opacity:0.85;
-            letter-spacing:1px;
+        .tagline{font-size:1.4rem;font-weight:400;opacity:0.9;margin-bottom: 80px;}
+        .icon{margin-right:12px;background:linear-gradient(135deg,#54a0ff,#a29bfe);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size: 1.2rem !important;}
+
+        /* 스크롤 힌트 애니메이션 */
+        .animated-hint {
+            position: absolute;
+            bottom: 40px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 1.2rem;
+            opacity: 0.75;
+            animation: scrollFade 1.8s infinite ease-in-out;
         }
-        .tagline .icon{
-            font-weight:700;
-            font-size:1.3rem;
-            margin-right:8px;
-            background:linear-gradient(135deg,#8ec5fc,#e0c3fc);
-            -webkit-background-clip:text;
-            -webkit-text-fill-color:transparent;
-            text-shadow:0 0 12px rgba(160,160,255,0.4);
-        }
+        
 
         /* 결과창 색감 개선 */
         .result-high{
@@ -164,7 +164,7 @@ const questions = [
     "이완기 혈압을 입력해주세요",
     "공복 혈당을 입력해주세요",
     "흡연하시나요?",
-    "음주하시나요?"
+    "음주하시나요?(주 1회 이상 기준)"
 ];
 
 let step = 1;
@@ -269,16 +269,27 @@ document.getElementById("submit").onclick = ()=>{
         card.innerHTML = `
             <h1 class="display-1 fw-bold mb-3">${res.prob}%</h1>
             <h2 class="display-5 mb-4">${res.risk_text}군</h2>
+        
+            <!-- 위험군 기준 안내 -->
+            <div class="p-4 mb-4" 
+                 style="background:rgba(255,255,255,0.12); border-radius:20px; backdrop-filter:blur(10px); text-align:left;">
+                <h4 class="fw-bold mb-3">📊 위험군 분류 기준</h4>
+                <p style="margin:0; line-height:1.7; font-size:1.1rem;">
+                    • <strong>저위험군</strong> : 예측 확률 <strong>< 3%</strong><br>
+                    • <strong>중위험군</strong> : <strong>3% ~ 10%</strong><br>
+                    • <strong>고위험군</strong> : <strong>10% 이상</strong>
+                </p>
+            </div>
 
-            <div class="result-text-box">${res.advice}</div>
+    <div class="result-text-box">${res.advice}</div>
 
-            <p class="mt-4" style="font-size:1rem;opacity:0.85;">
-                조언 생성 모델: <strong>Groq LLaMA-3.1-8B-Instant</strong>
-            </p>
+    <p class="mt-4" style="font-size:1rem;opacity:0.85;">
+        조언 생성 모델: <strong>Groq LLaMA-3.1-8B-Instant</strong>
+    </p>
 
-            <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
-        `;
-    })
+    <button class="btn btn-light btn-lg mt-5 px-5" onclick="location.reload()">다시 검사하기</button>
+`;
+
     .catch(()=>{
         document.getElementById("resultCard").innerHTML = `
             <h2>서버 오류 발생</h2>
